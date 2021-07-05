@@ -1,7 +1,9 @@
+from .CVModel import CVModel
+from .Timeline import Timeline
 
-class App:
+class TrafficPolice:
 	# 實例化模型但不加載
-	LPModel = LicensePlateModel()
+	LPModel = CVModel()
 
 	def __init__(self):
 		self.LPModel
@@ -9,7 +11,7 @@ class App:
 
 	def loadLicensePlateModel(self):
 		# 調用 <class LPModel> 的 load 方法加載模型
-		LPModel.load()
+		self.LPModel.load()
 
 	def loadImage(self):
 		pass
@@ -24,20 +26,20 @@ class App:
 	# 辨識車牌
 	def detectLicensePlate(self, video):
 		# 返回時間序列
-		return <list>
+		return Timeline()
 
 	# 辨識車輛
 	def detectCar(self):
 		# 返回時間序列
-		return <list>
+		return Timeline()
 
 	# 辨識紅綠燈
 	def detectTrafficLight(self):
 		# 返回時間序列
-		return <list>
+		return Timeline()
 
-    def detectTrafficSigns():
-        return <list>
+	def detectTrafficSigns():
+		return Timeline()
 
 	# 裁剪影片從 start 到 end
 	def cropVideo(self, start, end):
@@ -51,13 +53,3 @@ class App:
 	def saveVideo(self, video, path):
 		pass
 
-
-class Timeline:
-
-    def __init__(self):
-        self.timestamps = []
-
-    def timestamp(self, time):
-        if not isinstance(time, <time>):
-            raise TimelineErrors.ArgumentTypeError(time)
-        self.timestamps.append(time)
