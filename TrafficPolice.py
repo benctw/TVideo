@@ -1,9 +1,9 @@
-from .CVModel import CVModel
+from .YoloModel import YoloModel
 from .Timeline import Timeline
 
 class TrafficPolice:
 	# 實例化模型但不加載
-	LPModel = CVModel()
+	LPModel = YoloModel()
 
 	def __init__(self):
 		self.LPModel
@@ -45,11 +45,9 @@ class TrafficPolice:
 	def cropVideo(self, start, end):
 		pass
 
-	# 根據interval的間隔遍歷一遍影片的幀
-	def forVideo(self, interval):
-		pass
-
 	# 儲存片段到指定路徑
 	def saveVideo(self, video, path):
 		pass
 
+	def createReport():
+		pass

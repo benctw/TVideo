@@ -1,6 +1,6 @@
 
 
-class CVModelError(Exception):
+class YoloModelError(Exception):
 
 	def __init__(self, cause, message):
 		if message is None:
@@ -16,14 +16,24 @@ class CVModelError(Exception):
 		return "{0.message}".format(self) if self.cause is not None else "{0.cause} : {0.message}".format(self)
 
 
-class CVModelErrors:
-    
+class YoloModelErrors:
+
 	@staticmethod
 	def notLoaded():
-		return CVModelError('Model is not loaded!')
+		return YoloModelError('Model is not loaded!')
 
 	# 定義其他 Model Error
 	@staticmethod
 	def otherError():
-		return CVModelError('Error message!')
+		return YoloModelError('Error message!')
 
+
+class DetectResultError(Exception):
+	pass
+
+
+class DetectResultErrors():
+
+	@staticmethod
+	def ArgumentTypeError(*arg, type):
+		return DetectResultError(arg, "The argument must be type of {}".format(type))

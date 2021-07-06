@@ -7,5 +7,5 @@ class Timeline:
 
 	def stamp(self, time):
 		if not isinstance(time, time):
-			raise TimelineErrors.ArgumentTypeError(time)
+			raise TimelineErrors.ArgumentTypeError(time, time)
 		self.timestamps.append(time)

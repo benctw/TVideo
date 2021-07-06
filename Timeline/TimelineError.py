@@ -7,5 +7,5 @@ class TimelineError(Exception):
 class TimelineErrors:
 
 	@staticmethod
-	def ArgumentTypeError(arg):
-		return TimelineError(arg, 'The argument must be type of Time!')
+	def ArgumentTypeError(*arg, type):
+		return TimelineError(arg, "The argument must be type of {}!".format(type))
