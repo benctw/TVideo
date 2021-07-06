@@ -10,7 +10,7 @@ class TrafficPolice:
 		self.processVideo
 
 	def loadLicensePlateModel(self):
-		# 調用 <class LPModel> 的 load 方法加載模型
+		# 調用 <class YoloModel> 父類型 <class CVModel> 的 load 方法加載模型
 		self.LPModel.load()
 
 	def loadImage(self):
@@ -50,4 +50,5 @@ class TrafficPolice:
 		pass
 
 	def createReport():
+    	# TODO 先定義 report 的格式和内容
 		pass

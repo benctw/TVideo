@@ -13,4 +13,4 @@ class CVModel():
     def loopVideo(self, video, interval):
         # TODO get video frame
         frame = None
-        self.run(frame)
+        self.detectImage(frame)

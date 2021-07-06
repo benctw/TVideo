@@ -51,10 +51,6 @@ class YoloModel:
 		self.colors = []
 		self.minProbability = 0.5
 
-	# may be not useful
-	def initResult(self):
-		pass
-	
 	def setSrcPaths(self, namesPath, configPath, weightsPath):
 		self.namesPath = namesPath
 		self.configPath = configPath
@@ -79,11 +75,6 @@ class YoloModel:
 		self.net = cv2.dnn.readNetFromDarknet(self.configPath, self.weightsPath)
 		self.outputLayerNames = [self.net.getLayerNames()[i[0] - 1] for i in self.net.getUnconnectedOutLayers()]
 
-
-	# this should not be placed here
-	def frame(num):
-		pass
-	
 	# (cx, cy, w, h) -> (p1x, p1y, p2x, p2y)
 	@staticmethod
 	def yoloFormatToTwoPoint(centerX, centerY, width, height):
