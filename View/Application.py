@@ -1,8 +1,7 @@
-from _typeshed import FileDescriptorLike
 import tkinter as tk
 import json
 import os
-from typing_extensions import final
+from ..helper import dotdict
 
 
 class Application(tk.Frame):
@@ -15,7 +14,7 @@ class Application(tk.Frame):
         self.contents = {}
 
         self.loadSettings()
-        self.loadContents(self.settings["lang"])
+        self.loadContents(self.settings.lang)
         self.createWindow()
 
     # 加載設定文件
@@ -35,14 +34,30 @@ class Application(tk.Frame):
         with os.open('settings.json', 'w') as f:
             json.dump(self.settings, f)
 
+    def moveWindow(event):
+        pass
+
     def createWindow(self):
-        # TODO 使用 self.contents 取代固定的内容
-        # TODO 使用 self.settings 取代固定的設定
-        self.main.title(self.contents['window']['application_title'])
-        self.main.geometry("500x250")
+        self.main.overrideredirect(True)
+        self.main.title(self.contents.window.Application_Title)
+        self.main.geometry('{}x{}+{}+{}'.format(500, 250, 50, 50))
         self.main.resizable(0, 0)
-        # self.main.iconbitmap("###path###")
+        # self.main.iconbitmap("## logo paht ##")
         self.main.config(bg = "black")
+
+
+def center(toplevel):
+    toplevel.update_idletasks()
+
+    screen_width = toplevel.winfo_screenwidth()
+    screen_height = toplevel.winfo_screenheight()
+
+    size = tuple(int(_) for _ in toplevel.geometry().split('+')[0].split('x'))
+    x = screen_width / 2 - size[0] / 2
+    y = screen_height / 2 - size[1] / 2
+
+    toplevel.geometry('+{}+{}'.format(x, y))
+
 
 
 main = tk.Tk()

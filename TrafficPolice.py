@@ -53,5 +53,6 @@ class TrafficPolice:
     	# TODO 先定義 report 的格式和内容
 		pass
 	
+	@staticmethod
 	def versionUpdate():
 		pass
