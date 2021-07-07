@@ -4,8 +4,8 @@ import time
 import cv2
 import os
 
-from .YoloModelError import YoloModelError, DetectResultErrors
-from ..CVModel import CVModel
+from .YoloModelError import YoloModelErrors
+from ..CVModel.CVModel import CVModel, DetectResult
 
 # yolo on python
 # https://www.pyimagesearch.com/2018/11/12/yolo-object-detection-with-opencv/
@@ -16,24 +16,9 @@ from ..CVModel import CVModel
 # opencv net
 # https://docs.opencv.org/3.4/db/d30/classcv_1_1dnn_1_1Net.html
 
-class DetectResult:
-	def __init__(self, boxes = [], confidences = [], classIDs = []):
-		if not(isinstance(boxes, list) and isinstance(confidences, list) and isinstance(classIDs, list)):
-			raise DetectResultErrors.ArgumentTypeError(boxes, confidences, classIDs, list)
-		self.boxes = boxes
-		self.confidences = confidences
-		self.classIDs = classIDs
-	
-	# 添加結果
-	def add(self, box, confidence, classID):
-		self.boxes.append(box)
-		self.confidences.append(confidence)
-		self.classIDs.append(classID)
-		return self
-
 
 # 應該做成抽象對象，被繼承
-class YoloModel:
+class YoloModel(CVModel):
 
 	def __init__(self):
 		self.net
@@ -105,9 +90,6 @@ class YoloModel:
 					result.add(self.yoloFormatToTwoPoint(centerX, centerY, width, height), float(confidence), classID)
 		return result
 
-	def detectVideo(self, video):
-		pass
-		
 	def drawBoxes(self, image, detectResults):
 		idxs = cv2.dnn.NMSBoxes(detectResults.boxes, detectResults.confidences, self.confidence, self.threshold)
 		if len(idxs) > 0:

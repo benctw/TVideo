@@ -1,4 +1,8 @@
+from _typeshed import FileDescriptorLike
 import tkinter as tk
+import json
+import os
+from typing_extensions import final
 
 
 class Application(tk.Frame):
@@ -10,28 +14,31 @@ class Application(tk.Frame):
         self.settings = {}
         self.contents = {}
 
+        self.loadSettings()
+        self.loadContents(self.settings["lang"])
         self.createWindow()
 
     # 加載設定文件
     def loadSettings(self):
-        # TODO 讀取 settings.txt，把設定參數解析儲存到 self.settings，要先定義文件中參數的儲存格式
+        # TODO 讀取 settings.json，把内容解析並儲存到 self.settings
         pass
 
     # 加載界面的文字内容
     def loadContents(self, lang):
-        # TODO 根據參數 lang 讀取 lang 文件夾中的 txt 文件儲存到self.contents
+        # TODO 根據參數 lang 名稱讀取文件夾 lang 中的 json 文件解析並儲存到 self.contents
         pass
 
     # 修改設定
-    def modifySettings(self):
-        # TODO 修改 settings 文件中的資料
-        # 可能要重新渲染
-        pass
+    def modifySettings(self, settings):
+        for (key, val) in settings.items:
+            self.settings[key] = val
+        with os.open('settings.json', 'w') as f:
+            json.dump(self.settings, f)
 
     def createWindow(self):
         # TODO 使用 self.contents 取代固定的内容
         # TODO 使用 self.settings 取代固定的設定
-        self.main.title("Traffic Police")
+        self.main.title(self.contents['window']['application_title'])
         self.main.geometry("500x250")
         self.main.resizable(0, 0)
         # self.main.iconbitmap("###path###")

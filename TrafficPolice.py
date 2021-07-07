@@ -52,3 +52,6 @@ class TrafficPolice:
 	def createReport():
     	# TODO 先定義 report 的格式和内容
 		pass
+	
+	def versionUpdate():
+		pass
