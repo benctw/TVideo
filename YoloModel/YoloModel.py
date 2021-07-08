@@ -6,7 +6,7 @@ import os
 import easyocr
 
 from .YoloModelError import YoloModelErrors
-from ..CVModel.CVModel import CVModel, DetectResult
+from ..CVModel.CVModel import CVModel
 
 # yolo on python
 # https://www.pyimagesearch.com/2018/11/12/yolo-object-detection-with-opencv/
@@ -73,7 +73,7 @@ class YoloModel(CVModel):
 		return [p1x, p1y, p2x, p2y]
 
 	def detectImage(self, image: cv2.Mat):
-		result = DetectResult()
+		result = self.DetectResult()
 		( H, W ) = image.shape[:2]
 		blob = cv2.dnn.blobFromImage(image, 1 / 255, (416, 416), swapRB = True, crop = False)
 		self.net.setInput(blob)
@@ -121,6 +121,7 @@ class YoloModel(CVModel):
 		LPnum = reader.readtext(LP, detail = 0)
 		return LPnum
 
+	#
 	def compareLPNum(self):
 		pass
 
