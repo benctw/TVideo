@@ -25,7 +25,8 @@ class Application(tk.Frame):
     # 加載界面的文字内容
     def loadContents(self, lang):
         # TODO 根據參數 lang 名稱讀取文件夾 lang 中的 json 文件解析並儲存到 self.contents
-        pass
+        with open("lang/{0}.json".format(lang), mode = r) as file:
+            self.contents = dotdict(json.load(file))            
 
     # 修改設定
     def modifySettings(self, settings):
