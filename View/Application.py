@@ -19,8 +19,8 @@ class Application(tk.Frame):
 
     # 加載設定文件
     def loadSettings(self):
-        # TODO 讀取 settings.json，把内容解析並儲存到 self.settings
-        pass
+        with open("settings.json", mode = r) as file:
+            self.settings = dotdict(json.load(file))
 
     # 加載界面的文字内容
     def loadContents(self, lang):
