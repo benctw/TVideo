@@ -33,3 +33,23 @@ class CVModel(ABCMeta):
     def detectVideo(self, video, interval):
         # TODO 假設 self.detectImage 是 YoloModel 的 detectImage，用 self.detectImage 去辨識幀
         pass
+    @staticmethod
+    def get_images_from_video(video_name):
+        video_images = []
+        vc = cv2.VideoCapture(video_name)
+        c = 0
+
+        if vc.isOpened():	#判斷是否開啟影片
+		rval, video_frame = vc.read()
+	else:
+		rval = False
+
+	while rval:	#擷取視頻至結束
+		rval, video_frame = vc.read()
+
+		if(c % 30 == 0):	#每隔30幀進行擷取
+			video_images.append(video_frame)     
+		c = c + 1
+	vc.release()
+    
+	return video_images
