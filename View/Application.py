@@ -19,13 +19,14 @@ class Application(tk.Frame):
 
     # 加載設定文件
     def loadSettings(self):
-        # TODO 讀取 settings.json，把内容解析並儲存到 self.settings
-        pass
+        with open("settings.json", mode = r) as file:
+            self.settings = dotdict(json.load(file))
 
     # 加載界面的文字内容
     def loadContents(self, lang):
         # TODO 根據參數 lang 名稱讀取文件夾 lang 中的 json 文件解析並儲存到 self.contents
-        pass
+        with open("lang/{0}.json".format(lang), mode = r) as file:
+            self.contents = dotdict(json.load(file))            
 
     # 修改設定
     def modifySettings(self, settings):
