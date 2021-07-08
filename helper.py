@@ -1,5 +1,5 @@
 
-# 讓dict可以用'.'取值
+# 讓 dict 可以用'.'取值
 class dotdict(dict):
     __getattr__ = dict.get
     __setattr__ = dict.__setitem__

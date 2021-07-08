@@ -25,6 +25,7 @@ class YoloModel(CVModel):
 		self.detectMethod
 		self.result
 		self.imageSize
+		self.LPNum = ""
 
 		self.namesPath = ""
 		self.configPath = ""
@@ -107,3 +108,16 @@ class YoloModel(CVModel):
 
 		return image
 	
+	# 矯正
+	@staticmethod
+	def correct():
+		pass
+
+	# 獲得車牌號碼
+	@staticmethod
+	def getLPNum():
+		pass
+
+	def compareLPNum(self):
+		pass
+
