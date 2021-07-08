@@ -3,6 +3,7 @@ import argparse
 import time
 import cv2
 import os
+import easyocr
 
 from .YoloModelError import YoloModelErrors
 from ..CVModel.CVModel import CVModel
@@ -115,8 +116,10 @@ class YoloModel(CVModel):
 
 	# 獲得車牌號碼
 	@staticmethod
-	def getLPNum():
-		pass
+	def getLPNum(LP):
+		reader = easyocr.Reader(['en']) # need to run only once to load model into memory
+		LPnum = reader.readtext(LP, detail = 0)
+		return LPnum
 
 	#
 	def compareLPNum(self):
