@@ -4,53 +4,45 @@ from abc import ABCMeta, abstractmethod
 from .CVModelError import CVModelErrors, DetectResultErrors
 
 
-class DetectResult:
-	def __init__(self, boxes = [], confidences = [], classIDs = []):
-		if not(isinstance(boxes, list) and isinstance(confidences, list) and isinstance(classIDs, list)):
-			raise DetectResultErrors.ArgumentTypeError(boxes, confidences, classIDs, list)
-		self.boxes = boxes
-		self.confidences = confidences
-		self.classIDs = classIDs
-	
-	# 添加結果
-	def add(self, box, confidence, classID):
-		self.boxes.append(box)
-		self.confidences.append(confidence)
-		self.classIDs.append(classID)
-		return self
-
-
 class CVModel(ABCMeta):
-    __metaclass__ = ABCMeta
-    def __init__(self):
-        pass
+	__metaclass__ = ABCMeta
+	def __init__(self):
+		pass
 
-    @abstractmethod
-    def detectImage(image):
-        raise NotImplemented
+	class DetectResult:
+		def __init__(self, boxes = [], confidences = [], classIDs = []):
+			if not(isinstance(boxes, list) and isinstance(confidences, list) and isinstance(classIDs, list)):
+				raise DetectResultErrors.ArgumentTypeError(boxes, confidences, classIDs, list)
+			self.boxes = boxes
+			self.confidences = confidences
+			self.classIDs = classIDs
+		
+		# 添加結果
+		def add(self, box, confidence, classID):
+			self.boxes.append(box)
+			self.confidences.append(confidence)
+			self.classIDs.append(classID)
+			return self
 
-    # 根據 interval 的間隔遍歷一遍影片的幀
-    def detectVideo(self, vc, interval):
-        # TODO 假設 self.detectImage 是 YoloModel 的 detectImage，用 self.detectImage 去辨識幀
-		video_images=self.get_images_from_video(vc)
-		for i in range(0, len(video_images))
-			detectVideo=DetectResult(video_images[i])
-    @staticmethod
-    def get_images_from_video(vc):
-    	video_images = []
-        c = 0
+	@abstractmethod
+	def detectImage(image):
+		raise NotImplemented
 
-        if vc.isOpened():	#判斷是否開啟影片
-		rval, video_frame = vc.read()
-	else:
+	# 根據 interval 的間隔遍歷一遍影片的幀
+	def detectVideo(self, vc, interval):
+		results = []
+		videoImages = self.getImagesFromVideo(vc)
+		for image in videoImages[::interval]:
+			results.append(self.detectImage(image))
+		return results
+
+	@staticmethod
+	def getImagesFromVideo(vc):
+		videoImages = []
 		rval = False
-
-	while rval:	#擷取視頻至結束
-		rval, video_frame = vc.read()
-
-		if(c % 30 == 0):	#每隔30幀進行擷取
-			video_images.append(video_frame)     
-		c = c + 1
-	vc.release()
-    
-	return video_images
+		if vc.isOpened(): rval, videoFrame = vc.read() #判斷是否開啟影片
+		while rval:	#擷取視頻至結束
+			videoImages.append(videoFrame)
+			rval, videoFrame = vc.read()
+		vc.release()
+		return videoImages
