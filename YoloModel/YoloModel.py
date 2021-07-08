@@ -118,7 +118,8 @@ class YoloModel(CVModel):
 	@staticmethod
 	def getLPNum(LP):
 		reader = easyocr.Reader(['en']) # need to run only once to load model into memory
-		result = reader.readtext(LP, detail = 0)
+		LPnum = reader.readtext(LP, detail = 0)
+		return LPnum
 
 	def compareLPNum(self):
 		pass
