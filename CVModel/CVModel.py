@@ -30,15 +30,14 @@ class CVModel(ABCMeta):
         raise NotImplemented
 
     # 根據 interval 的間隔遍歷一遍影片的幀
-    def detectVideo(self, video, interval):
+    def detectVideo(self, vc, interval):
         # TODO 假設 self.detectImage 是 YoloModel 的 detectImage，用 self.detectImage 去辨識幀
-		video_images=self.get_images_from_video(video_name)
+		video_images=self.get_images_from_video(vc)
 		for i in range(0, len(video_images))
 			detectVideo=DetectResult(video_images[i])
     @staticmethod
-    def get_images_from_video(video_name):
+    def get_images_from_video(vc):
     	video_images = []
-        vc = cv2.VideoCapture(video_name)
         c = 0
 
         if vc.isOpened():	#判斷是否開啟影片
