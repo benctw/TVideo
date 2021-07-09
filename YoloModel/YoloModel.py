@@ -21,16 +21,16 @@ from ..CVModel.CVModel import CVModel
 # 應該做成抽象對象，被繼承
 class YoloModel(CVModel):
 
-	def __init__(self):
+	def __init__(self, namesPath = '', configPath = '', weightsPath = ''):
 		self.net
 		self.detectMethod
 		self.result
 		self.imageSize
-		self.LPNum = ""
+		self.LPNum = ''
 
-		self.namesPath = ""
-		self.configPath = ""
-		self.weightsPath = ""
+		self.namesPath = namesPath
+		self.configPath = configPath
+		self.weightsPath = weightsPath
 		self.labels = []
 		self.outputLayerNames
 		self.threshold = 0.3
@@ -38,18 +38,10 @@ class YoloModel(CVModel):
 		self.colors = []
 		self.minProbability = 0.5
 
-	def setSrcPaths(self, namesPath, configPath, weightsPath):
-		self.namesPath = namesPath
-		self.configPath = configPath
-		self.weightsPath = weightsPath
-
-	def loadModel(self, model):
-		self.model = model
-
 	# 解析.names文件
-	def loadNames(self, path):
+	def loadNames(self):
 		# TODO error handling: when the file can not be loaded
-		self.labels = open(path).read().strip().split('\n')
+		self.labels = open(self.namesPath).read().strip().split('\n')
 		self.colors = np.random.randint(0, 255, size = (len(self.labels), 3), dtype = "uint8")
 		
 	def load(self):
@@ -58,7 +50,7 @@ class YoloModel(CVModel):
 		# self.namesPath = os.path.sep.join("", "lp.names")
 		# self.configPath = os.path.sep.join("", "lp.cfg")
 		# self.weightsPath = os.path.sep.join("", "lp.weights")
-		self.loadNames(self.namesPath)
+		self.loadNames()
 		self.net = cv2.dnn.readNetFromDarknet(self.configPath, self.weightsPath)
 		self.outputLayerNames = [self.net.getLayerNames()[i[0] - 1] for i in self.net.getUnconnectedOutLayers()]
 

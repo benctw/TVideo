@@ -4,6 +4,6 @@ class RESAModel(CVModel):
     def __init__(self):
         pass
 
-    def detectImage(image):
+    def detectImage(self, image):
         pass
     

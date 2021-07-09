@@ -19,21 +19,23 @@ class Application(tk.Frame):
 
     # 加載設定文件
     def loadSettings(self):
-        with open("settings.json", mode = r) as file:
+        with open("settings.json", mode = 'r') as file:
             self.settings = dotdict(json.load(file))
 
     # 加載界面的文字内容
     def loadContents(self, lang):
-        # TODO 根據參數 lang 名稱讀取文件夾 lang 中的 json 文件解析並儲存到 self.contents
-        with open("lang/{0}.json".format(lang), mode = r) as file:
-            self.contents = dotdict(json.load(file))            
+        with open(os.path.join("lang", "{}.json".format(lang)), mode = 'r') as file:
+            self.contents = dotdict(json.load(file))
 
     # 修改設定
     def modifySettings(self, settings):
-        for (key, val) in settings.items:
-            self.settings[key] = val
-        with os.open('settings.json', 'w') as f:
-            json.dump(self.settings, f)
+        for (key, val) in settings.items():
+            if key in self.settings:
+                self.settings[key] = val
+            else:
+                raise KeyError
+        with open('settings.json', 'w') as file:
+            json.dump(self.settings, file)
 
     def moveWindow(event):
         pass
