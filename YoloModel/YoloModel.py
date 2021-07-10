@@ -115,5 +115,5 @@ class YoloModel(CVModel):
 
 	# 比較車牌號碼
 	def compareLPNum(self, detectLPnum):
-		return 1 if self.LPNum == detectLPnum else return Levenshtein.ratio(str1,str2)
+		return 1 if self.LPNum == detectLPnum else Levenshtein.ratio(str1,str2)
 		
