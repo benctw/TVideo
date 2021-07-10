@@ -110,8 +110,7 @@ class YoloModel(CVModel):
 	@staticmethod
 	def getLPNum(LPpicture):
 		reader = easyocr.Reader(['en']) # need to run only once to load model into memory
-		LPresults = reader.readtext(LPpicture, detail = 0)
-		detectLPnum = ''.join(LPresults) 
+		detectLPnum = reader.readtext(LPpicture, detail = 0)
 		return detectLPnum
 
 	#
