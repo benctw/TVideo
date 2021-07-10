@@ -38,8 +38,13 @@ class TrafficPolice:
 		# 返回時間序列
 		return Timeline()
 
+	# 辨識交通標誌 
 	def detectTrafficSigns():
 		return Timeline()
+
+	# 判斷車輛行駛方向
+	def drivingDirection():
+		pass
 
 	# 裁剪影片從 start 到 end
 	def cropVideo(self, start, end):
@@ -49,10 +54,12 @@ class TrafficPolice:
 	def saveVideo(self, video, path):
 		pass
 
+	# 生成報告
 	def createReport():
     	# TODO 先定義 report 的格式和内容
 		pass
 	
+	# 版本更新
 	@staticmethod
 	def versionUpdate():
 		pass
