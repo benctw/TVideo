@@ -110,9 +110,8 @@ class YoloModel(CVModel):
 		edged = cv2.Canny(blurred, 20, 160)          # 边缘检测
 
 		cnts,_ = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)  # 轮廓检测
-		#cnts = cnts[0] if imutils.is_cv2() else cnts[1]  # 判断是opencv2还是opencv3
-		docCnt = None
 
+		docCnt = None
 		if len(cnts) > 0:
 			cnts = sorted(cnts, key=cv2.contourArea, reverse=True) # 根据轮廓面积从大到小排序
 			for c in cnts:
@@ -135,15 +134,6 @@ class YoloModel(CVModel):
 		mat = cv2.getPerspectiveTransform(point_set_0, point_set_1)
 		# 投影变换
 		lic = cv2.warpPerspective(img, mat, (440, 140))
-
-		# 显示校正后的车牌
-		cv2.namedWindow("img")
-		cv2.imshow("img", img)
-		cv2.namedWindow("Lic")
-		cv2.imshow("Lic", lic)
-		# 暂停、关闭窗口
-		cv2.waitKey(0)
-		cv2.destroyAllWindows()
 
 	# 獲得車牌號碼
 	@staticmethod
