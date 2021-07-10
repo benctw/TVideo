@@ -4,7 +4,7 @@ import time
 import cv2
 import os
 import easyocr
-
+import Levenshtein
 from .YoloModelError import YoloModelErrors
 from ..CVModel.CVModel import CVModel
 
@@ -142,7 +142,7 @@ class YoloModel(CVModel):
 		detectLPnum = reader.readtext(LPimage, detail = 0)
 		return detectLPnum
 
-	#
-	def compareLPNum(self):
-		pass
-
+	# 比較車牌號碼
+	def compareLPNum(self, detectLPnum):
+		return 1 if self.LPNum == detectLPnum else Levenshtein.ratio(str1,str2)
+		
