@@ -1,7 +1,19 @@
 import tkinter as tk
 import json
 import os
-from ..helper import dotdict
+
+class dotdict(dict):
+    __getattr__ = dict.get
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
+
+    @staticmethod
+    def deep(d):
+        d = dotdict(d)
+        for key in d.keys():
+            if isinstance(d[key], dict):
+                d[key] = dotdict.deep(d[key])
+        return d
 
 
 class Application(tk.Frame):
@@ -20,12 +32,12 @@ class Application(tk.Frame):
     # 加載設定文件
     def loadSettings(self):
         with open("settings.json", mode = 'r') as file:
-            self.settings = dotdict(json.load(file))
+            self.settings = dotdict.deep(json.load(file))
 
     # 加載界面的文字内容
     def loadContents(self, lang):
         with open(os.path.join("lang", "{}.json".format(lang)), mode = 'r') as file:
-            self.contents = dotdict(json.load(file))
+            self.contents = dotdict.deep(json.load(file))
 
     # 修改設定
     def modifySettings(self, settings):
@@ -41,7 +53,7 @@ class Application(tk.Frame):
         pass
 
     def createWindow(self):
-        self.main.overrideredirect(True)
+        # self.main.overrideredirect(True)
         self.main.title(self.contents.window.Application_Title)
         self.main.geometry('{}x{}+{}+{}'.format(500, 250, 50, 50))
         self.main.resizable(0, 0)
