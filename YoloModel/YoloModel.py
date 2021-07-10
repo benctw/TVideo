@@ -108,9 +108,9 @@ class YoloModel(CVModel):
 
 	# 獲得車牌號碼
 	@staticmethod
-	def getLPNum(LPpicture):
+	def getLPNum(LPimage):
 		reader = easyocr.Reader(['en']) # need to run only once to load model into memory
-		detectLPnum = reader.readtext(LPpicture, detail = 0)
+		detectLPnum = reader.readtext(LPimage, detail = 0)
 		return detectLPnum
 
 	#
