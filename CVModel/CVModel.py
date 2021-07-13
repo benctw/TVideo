@@ -39,6 +39,17 @@ class CVModel(ABCMeta):
 			for i in range(0, self.classIDs):
 				print(rowFormat.format(i, self.classIDs[i], self.boxes[i], self.confidences[i]))
 
+	@staticmethod
+	def getImagesFromVideo(videoCapture):
+		videoImages = []
+		rval = False
+		if videoCapture.isOpened(): rval, videoFrame = videoCapture.read() #判斷是否開啟影片
+		while rval:	#擷取視頻至結束
+			videoImages.append(videoFrame)
+			rval, videoFrame = videoCapture.read()
+		videoCapture.release()
+		return videoImages
+
 	@abstractmethod
 	def detectImage(image):
 		raise NotImplemented
@@ -50,14 +61,3 @@ class CVModel(ABCMeta):
 		for image in videoImages[::interval]:
 			results.append(self.detectImage(image))
 		return results
-
-	@staticmethod
-	def getImagesFromVideo(videoCapture):
-		videoImages = []
-		rval = False
-		if videoCapture.isOpened(): rval, videoFrame = videoCapture.read() #判斷是否開啟影片
-		while rval:	#擷取視頻至結束
-			videoImages.append(videoFrame)
-			rval, videoFrame = videoCapture.read()
-		videoCapture.release()
-		return videoImages

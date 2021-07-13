@@ -65,10 +65,10 @@ class TrafficPolice:
 	# 判斷車輛行駛方向
 	def drivingDirection(p1, p2):
 		vector = (p2[0] - p1[0], p2[1] - p1[1])
-		# norm = math.sqrt(vector[0]**2 + vector[1]**2)
-		# unitVector = (v / norm for v in vector)
-		slope = vector[1] / vector[0]
-		return slope
+		norm = math.sqrt(vector[0]**2 + vector[1]**2)
+		unitVector = (v / norm for v in vector)
+		# slope = vector[1] / vector[0]
+		return unitVector
 
 	# 裁剪影片從 start 到 end
 	def cropVideo(self, start, end):
