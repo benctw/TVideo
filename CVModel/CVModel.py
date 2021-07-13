@@ -10,19 +10,27 @@ class CVModel(ABCMeta):
 		pass
 
 	class DetectResult:
-		def __init__(self, boxes = [], confidences = [], classIDs = []):
+		def __init__(self, classIDs = [], boxes = [], confidences = []):
 			if not(isinstance(boxes, list) and isinstance(confidences, list) and isinstance(classIDs, list)):
-				raise DetectResultErrors.ArgumentTypeError(boxes, confidences, classIDs, list)
+				raise DetectResultErrors.ArgumentTypeError(classIDs, boxes, confidences, list)
 			self.boxes = boxes
 			self.confidences = confidences
 			self.classIDs = classIDs
 		
 		# 添加結果
-		def add(self, box, confidence, classID):
+		def add(self, classID, box, confidence):
 			self.boxes.append(box)
 			self.confidences.append(confidence)
 			self.classIDs.append(classID)
-			return 
+			return self
+		
+		def hasResult(self):
+			return len(self.classIDs) > 0
+		
+		def crop(self, image, boxIndex = 0):
+			croppedImage = image.copy()
+			p1x, p1y, p2x, p2y = self.boxes[boxIndex]
+			return croppedImage[p1y:p2y, p1x:p2x]
 		
 		def display(self):
 			header = ['Index', 'ClassID', 'Box', 'Confidence']
@@ -36,20 +44,20 @@ class CVModel(ABCMeta):
 		raise NotImplemented
 
 	# 根據 interval 的間隔遍歷一遍影片的幀
-	def detectVideo(self, vc, interval):
+	def detectVideo(self, videoCapture, interval):
 		results = []
-		videoImages = self.getImagesFromVideo(vc)
+		videoImages = self.getImagesFromVideo(videoCapture)
 		for image in videoImages[::interval]:
 			results.append(self.detectImage(image))
 		return results
 
 	@staticmethod
-	def getImagesFromVideo(vc):
+	def getImagesFromVideo(videoCapture):
 		videoImages = []
 		rval = False
-		if vc.isOpened(): rval, videoFrame = vc.read() #判斷是否開啟影片
+		if videoCapture.isOpened(): rval, videoFrame = videoCapture.read() #判斷是否開啟影片
 		while rval:	#擷取視頻至結束
 			videoImages.append(videoFrame)
-			rval, videoFrame = vc.read()
-		vc.release()
+			rval, videoFrame = videoCapture.read()
+		videoCapture.release()
 		return videoImages

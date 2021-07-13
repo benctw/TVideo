@@ -9,3 +9,4 @@ class Timeline:
 		if not isinstance(time, time):
 			raise TimelineErrors.ArgumentTypeError(time, time)
 		self.timestamps.append(time)
+		return self

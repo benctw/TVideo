@@ -1,5 +1,8 @@
 import math
+import cv2
+import os
 
+from TrafficPolice.CVModel.CVModel import CVModel
 from TrafficPolice.YoloModel.YoloModel import YoloModel
 from TrafficPolice.Timeline.Timeline import Timeline
 
@@ -8,8 +11,7 @@ class TrafficPolice:
 	LPModel = YoloModel()
 
 	def __init__(self):
-		self.LPModel
-		self.processVideo
+		pass
 
 	def loadLicensePlateModel(self):
 		# 調用 <class YoloModel> 父類型 <class CVModel> 的 load 方法加載模型
@@ -26,9 +28,25 @@ class TrafficPolice:
 		pass
 
 	# 辨識車牌
-	def detectLicensePlate(self, video):
-		# 返回時間序列
-		return Timeline()
+	def licensePlateProcess(self, path):
+		if path.lower().endswith(('.jpg', '.jpeg', '.png')):
+			image = cv2.imread(path)
+			detectResult = self.LPModel.detectImage(image)
+			if detectResult.hasResult():
+				LPImage = detectResult.crop(image)
+				# correctedLPImage = self.LPModel.correct(LPImage)
+				LPNumber = self.LPModel.getLPNumber(LPImage)
+				print(LPNumber)
+				similarity = self.LPModel.compareLPNumber(LPNumber)
+				if similarity == 1:
+					print('找到對應車牌號碼: {}'.format(LPNumber))
+		elif path.lower().endswith(('.mp4', '.avi')):
+			videoCapture = cv2.VideoCapture(path)
+			detectResult = self.LPModel.detectVideo(videoCapture)
+		else:
+			print('不支持的文件格式！')
+			return
+		
 
 	# 辨識車輛
 	def detectCar(self):
