@@ -43,7 +43,7 @@ TrafficPolice
 
 獲取 `videoCapture` 中每一幀的影像
 
-#### detectImage(image: cv.Mat) -> DetectResult
+#### detectImage(self, image: cv.Mat) -> DetectResult
 
 必須定義 `detectImage` 方法
 
@@ -55,7 +55,7 @@ TrafficPolice
 
 ### class DetectResult
 
-#### \_\_init\_\_(classIDs = [], boxes = [], confidences = [])
+#### \_\_init\_\_(self, classIDs = [], boxes = [], confidences = [])
 
 `classIDs` : 辨識到的多個分類
 
