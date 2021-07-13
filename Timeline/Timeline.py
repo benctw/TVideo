@@ -1,4 +1,4 @@
-from .TimelineError import TimelineErrors
+from TrafficPolice.Timeline.TimelineError import TimelineErrors
 
 class Timeline:
 

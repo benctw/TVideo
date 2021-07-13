@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 from abc import ABCMeta, abstractmethod
-from .CVModelError import CVModelErrors, DetectResultErrors
+from TrafficPolice.CVModel.CVModelError import CVModelErrors, DetectResultErrors
 
 
 class CVModel(ABCMeta):
@@ -22,7 +22,14 @@ class CVModel(ABCMeta):
 			self.boxes.append(box)
 			self.confidences.append(confidence)
 			self.classIDs.append(classID)
-			return self
+			return 
+		
+		def display(self):
+			header = ['Index', 'ClassID', 'Box', 'Confidence']
+			rowFormat = '{:>12}' * len(header)
+			print(rowFormat.format('', *header))
+			for i in range(0, self.classIDs):
+				print(rowFormat.format(i, self.classIDs[i], self.boxes[i], self.confidences[i]))
 
 	@abstractmethod
 	def detectImage(image):

@@ -1,5 +1,7 @@
-from .YoloModel import YoloModel
-from .Timeline import Timeline
+import math
+
+from TrafficPolice.YoloModel.YoloModel import YoloModel
+from TrafficPolice.Timeline.Timeline import Timeline
 
 class TrafficPolice:
 	# 實例化模型但不加載
@@ -43,8 +45,12 @@ class TrafficPolice:
 		return Timeline()
 
 	# 判斷車輛行駛方向
-	def drivingDirection():
-		pass
+	def drivingDirection(p1, p2):
+		vector = (p2[0] - p1[0], p2[1] - p1[1])
+		# norm = math.sqrt(vector[0]**2 + vector[1]**2)
+		# unitVector = (v / norm for v in vector)
+		slope = vector[1] / vector[0]
+		return slope
 
 	# 裁剪影片從 start 到 end
 	def cropVideo(self, start, end):

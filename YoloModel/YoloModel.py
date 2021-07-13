@@ -5,8 +5,8 @@ import cv2
 import os
 import easyocr
 import Levenshtein
-from .YoloModelError import YoloModelErrors
-from ..CVModel.CVModel import CVModel
+from TrafficPolice.YoloModel.YoloModelError import YoloModelErrors
+from TrafficPolice.CVModel.CVModel import CVModel
 
 # yolo on python
 # https://www.pyimagesearch.com/2018/11/12/yolo-object-detection-with-opencv/
@@ -22,21 +22,15 @@ from ..CVModel.CVModel import CVModel
 class YoloModel(CVModel):
 
 	def __init__(self, namesPath = '', configPath = '', weightsPath = ''):
-		self.net
-		self.detectMethod
-		self.result
-		self.imageSize
-		self.LPNum = ''
-
+		self.LPNumber = ''
 		self.namesPath = namesPath
 		self.configPath = configPath
 		self.weightsPath = weightsPath
 		self.labels = []
-		self.outputLayerNames
 		self.threshold = 0.3
 		self.confidence = 0.5
 		self.colors = []
-		self.minProbability = 0.5
+		self.minConfidence = 0.2
 
 	# 解析.names文件
 	def loadNames(self):
@@ -64,7 +58,7 @@ class YoloModel(CVModel):
 		p2y = p1y + height
 		return [p1x, p1y, p2x, p2y]
 
-	def detectImage(self, image: cv2.Mat):
+	def detectImage(self, image):
 		result = self.DetectResult()
 		( H, W ) = image.shape[:2]
 		blob = cv2.dnn.blobFromImage(image, 1 / 255, (416, 416), swapRB = True, crop = False)
@@ -78,13 +72,14 @@ class YoloModel(CVModel):
 				# 找出得分最大的 index
 				classID = np.argmax(scores)
 				confidence = scores[classID]
-				if confidence > self.minProbability:
+				if confidence > self.minConfidence:
 					box = detection[0 : 4] * np.array([W, H, W, H])
 					(centerX, centerY, width, height) = box.astype("int")
 					result.add(self.yoloFormatToTwoPoint(centerX, centerY, width, height), float(confidence), classID)
 		return result
 
 	def drawBoxes(self, image, detectResults):
+		newImage = image.copy()
 		idxs = cv2.dnn.NMSBoxes(detectResults.boxes, detectResults.confidences, self.confidence, self.threshold)
 		if len(idxs) > 0:
 			for i in idxs.flatten():
@@ -93,19 +88,16 @@ class YoloModel(CVModel):
 				p2x = detectResults.boxes[i][2]
 				p2y = detectResults.boxes[i][3]
 
-		# 修改image是原地？
-		color = self.colors[detectResults.classIDs[i]] ###
-		cv2.rectangle(image, (p1x, p1y), (p2x, p2y), color, 2)
-		text = "{}: {:.4f}".format(self.labels[detectResults.classIDs[i]], detectResults.confidences[i])
-		cv2.putText(image, text, (p1x, p1y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
-
-		return image
+				color = self.colors[detectResults.classIDs[i]]
+				cv2.rectangle(newImage, (p1x, p1y), (p2x, p2y), color, 2)
+				text = "{}: {:.4f}".format(self.labels[detectResults.classIDs[i]], detectResults.confidences[i])
+				cv2.putText(newImage, text, (p1x, p1y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+		return newImage
 	
 	# 矯正
 	@staticmethod
-	def correct():
-		img = cv2.imread('PL.jpg')
-		gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+	def correct(image):
+		gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 		blurred = cv2.GaussianBlur(gray, (11, 11), 0)
 		edged = cv2.Canny(blurred, 20, 160)          # 边缘检测
 
@@ -123,9 +115,9 @@ class YoloModel(CVModel):
 					break
 		for peak in docCnt:
 			peak = peak[0]
-			cv2.circle(img, tuple(peak), 10, (255, 0, 0))
+			cv2.circle(image, tuple(peak), 10, (255, 0, 0))
 			
-		H, W = img.shape[:2]
+		H, W = image.shape[:2]
 
 		point_set_0 = np.float32([docCnt[1,0],docCnt[2,0],docCnt[3,0],docCnt[0,0]])
 		point_set_1 = np.float32([[0, 0],[0, 140],[440, 140],[440, 0]])
@@ -133,17 +125,16 @@ class YoloModel(CVModel):
 		# 变换矩阵
 		mat = cv2.getPerspectiveTransform(point_set_0, point_set_1)
 		# 投影变换
-		lic = cv2.warpPerspective(img, mat, (440, 140))
+		lic = cv2.warpPerspective(image, mat, (440, 140))
 
 	# 獲得車牌號碼
 	@staticmethod
-	def getLPNum(LPimage):
+	def getLPNumber(LPImage):
 		reader = easyocr.Reader(['en']) # need to run only once to load model into memory
-		detectLPnum = reader.readtext(LPimage, detail = 0)
-		return detectLPnum
+		return reader.readtext(LPImage, detail = 0)
 
 	# 比較車牌號碼
-	def compareLPNum(self, detectLPnum):
-		return 1 if self.LPNum == detectLPnum else Levenshtein.ratio(detectLPnum, self.LPNum)
+	def compareLPNum(self, detectLPNumber):
+		return 1 if self.LPNumber == detectLPNumber else Levenshtein.ratio(detectLPNumber, self.LPNumber)
 	
 		
