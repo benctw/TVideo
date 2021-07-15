@@ -12,14 +12,8 @@ from TrafficPolice.CVModel.CVModel import CVModel
 # 應該做成抽象對象，被繼承
 class YoloModel(CVModel):
 
-	def __init__(self, namesPath, configPath, weightsPath):
+	def __init__(self):
 		self.LPNumber = ''
-		self.namesPath = os.path.join("src", "lp.names") if namesPath is None else namesPath
-		self.configPath = os.path.join("src", "lp.cfg") if configPath is None else configPath
-		self.weightsPath = os.path.join("src", "lp.weights") if weightsPath is None else weightsPath
-		self.threshold = 0.2
-		self.confidence = 0.5
-		self.minConfidence = 0.2
 
 	# (cx, cy, w, h) -> (p1x, p1y, p2x, p2y)
 	@staticmethod
@@ -69,14 +63,21 @@ class YoloModel(CVModel):
 	def getLPNumber(LPImage):
 		reader = easyocr.Reader(['en']) # need to run only once to load model into memory
 		return reader.readtext(LPImage, detail = 0)
-	
-	def load(self):
+
+	def load(self, namesPath, configPath, weightsPath, threshold = 0.2, confidence = 0.5, minConfidence = 0.2):
 		print("Loading YOLO Model...")
+		self.namesPath = os.path.join(*namesPath.split('\\'))
+		self.configPath = os.path.join(*configPath.split('\\'))
+		self.weightsPath = os.path.join(*weightsPath.split('\\'))
+		self.threshold = threshold
+		self.confidence = confidence
+		self.minConfidence = minConfidence
 		## TODO error handling
 		self.labels = open(self.namesPath).read().strip().split('\n')
 		self.colors = np.random.randint(0, 255, size = (len(self.labels), 3), dtype = "uint8")
 		self.net = cv2.dnn.readNetFromDarknet(self.configPath, self.weightsPath)
 		self.outputLayerNames = [self.net.getLayerNames()[i[0] - 1] for i in self.net.getUnconnectedOutLayers()]
+		print("Loaded YOLO Model!")
 
 	def detectImage(self, image):
 		result = self.DetectResult()

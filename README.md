@@ -39,11 +39,11 @@ TrafficPolice
 
 用於輸入為影像的模型的抽象對象
 
-#### @staticmethod　getImagesFromVideo(videoCapture: cv.VideoCapture) -> [cv.Mat]
+#### @staticmethod getImagesFromVideo(videoCapture: cv.VideoCapture) -> [cv.Mat]
 
 獲取 `videoCapture` 中每一幀的影像
 
-#### detectImage(image: cv.Mat) -> DetectResult
+#### @abstractmethod detectImage(image: cv.Mat) -> DetectResult
 
 必須定義 `detectImage` 方法
 
@@ -111,21 +111,9 @@ TrafficPolice
 
 ### class YoloModel(CVModel)
 
-#### \_\_init\_\_(self, namesPath, configPath, weightsPath)
+#### \_\_init\_\_(self)
 
-`namesPath` : .names 文件的路徑
-
-`configPath` : .cfg 文件的路徑
-
-`weightsPath` : .weights 文件的路徑
-
-預設：
-
-`self.threshold = 0.2`
-
-`self.confidence = 0.5`
-
-`self.minConfidence = 0.2`
+初始化
 
 #### @staticmethod yoloFormatToTwoPoint(centerX: int, centerY: int, width: int, height: int) -> [int, int, int, int]
 
@@ -145,9 +133,23 @@ TrafficPolice
 
 從圖像中辨識車牌號碼
 
-#### load(self) -> void
+#### load(self, namesPath: str, configPath: str, weightsPath: str, threshold: float = 0.2, confidence: float = 0.5, minConfidence: float = 0.2) -> void
 
 加載模型
+
+`namesPath` : .names 文件的路徑
+
+`configPath` : .cfg 文件的路徑
+
+`weightsPath` : .weights 文件的路徑
+
+預設：
+
+`threshold` : 閥值
+
+`confidence` : 信心
+
+`minConfidence` : 最小信心
 
 > 加載 `.names` 文件中的 `label`　和定義各 `label` 的顔色
 

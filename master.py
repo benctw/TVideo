@@ -7,15 +7,11 @@ from TrafficPolice.YoloModel.YoloModel import YoloModel
 from TrafficPolice.Timeline.Timeline import Timeline
 
 class TrafficPolice:
-	# 實例化模型但不加載
+	# 實例化模型但不加載 net
 	LPModel = YoloModel()
 
 	def __init__(self):
 		pass
-
-	def loadLicensePlateModel(self):
-		# 調用 <class YoloModel> 父類型 <class CVModel> 的 load 方法加載模型
-		self.LPModel.load()
 
 	def loadImage(self):
 		pass
@@ -28,7 +24,7 @@ class TrafficPolice:
 		pass
 
 	# 辨識車牌
-	def licensePlateProcess(self, path):
+	def LPProcess(self, path):
 		if path.lower().endswith(('.jpg', '.jpeg', '.png')):
 			image = cv2.imread(path)
 			detectResult = self.LPModel.detectImage(image)
