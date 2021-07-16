@@ -2,35 +2,42 @@
 
 ```
 TrafficPolice
-├─ CVModel
-│	├─ CVModel.py
-│	├─ CVModelError.py
-│	└─ __init__.py
 ├─ README.md
-├─ RESAModel
-│	├─ RESAModel.py
-│	└─ __init__.py
-├─ Timeline
-│	├─ Timeline.py
-│	├─ TimelineError.py
-│	└─ __init__.py
-├─ View
-│	├─ Application.py
-│	├─ __init__.py
-│	├─ defaultSetting.json
-│	├─ lang
-│	│	├─ standard.json
-│	│	└─ zh-TW.json
-│	├─ settings.json
-│	└─ src
-├─ YoloModel
-│	├─ YoloModel.py
-│	├─ YoloModelError.py
-│	├─ __init__.py
-│	└─ src
-├─ __init__.py
-├─ helper.py
-└─ master.py
+├─ controllers
+│    └─ setting.py
+├─ main.py
+├─ models
+│    ├─ CVModel
+│    │    ├─ CVModel.py
+│    │    ├─ CVModelError.py
+│    │    └─ __init__.py
+│    ├─ RESAModel
+│    │    ├─ RESAModel.py
+│    │    └─ __init__.py
+│    ├─ Timeline
+│    │    ├─ Timeline.py
+│    │    ├─ TimelineError.py
+│    │    └─ __init__.py
+│    ├─ YoloModel
+│    │    ├─ YoloModel.py
+│    │    ├─ YoloModelError.py
+│    │    └─ __init__.py
+│    ├─ __init__.py
+│    └─ helper.py
+├─ static
+│    ├─ ico
+│    ├─ img
+│    ├─ model
+│    │    ├─ lp.cfg
+│    │    └─ lp.names
+│    └─ preset
+│           └─ defaultSetting.json
+├─ store
+│    └─ settings.json
+└─ views
+       └─ lang
+              ├─ standard.json
+              └─ zh-TW.json
 ```
 
 ***
@@ -43,9 +50,11 @@ TrafficPolice
 
 獲取 `videoCapture` 中每一幀的影像
 
-#### detectImage(self, image: cv.Mat) -> DetectResult
+#### @abstractmethod detectImage(self, image: cv.Mat) -> DetectResult
 
-必須定義 `detectImage` 方法
+必須重新定義該方法
+
+定義：利用模型辨識傳入之圖像並回傳 `DetectResult` 的類型
 
 #### detectVideo(self, videoCapture: cv.VideoCapture, interval: int) -> [DetectResult]
 

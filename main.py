@@ -1,10 +1,14 @@
 import math
 import cv2
 import os
+import sys
 
-from TrafficPolice.CVModel.CVModel import CVModel
-from TrafficPolice.YoloModel.YoloModel import YoloModel
-from TrafficPolice.Timeline.Timeline import Timeline
+from TrafficPolice.models.YoloModel.YoloModel import YoloModel
+from TrafficPolice.models.Timeline.Timeline import Timeline
+
+# sys.path.append("models")
+# from YoloModel.YoloModel import YoloModel
+# from Timeline.Timeline import Timeline
 
 class TrafficPolice:
 	# 實例化模型但不加載 net

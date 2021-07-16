@@ -5,8 +5,8 @@ import cv2
 import os
 import easyocr
 import Levenshtein
-from TrafficPolice.YoloModel.YoloModelError import YoloModelErrors
-from TrafficPolice.CVModel.CVModel import CVModel
+from .YoloModelError import YoloModelErrors
+from ..CVModel.CVModel import CVModel
 
 
 # 應該做成抽象對象，被繼承

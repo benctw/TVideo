@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 from abc import ABCMeta, abstractmethod
-from TrafficPolice.CVModel.CVModelError import CVModelErrors, DetectResultErrors
+from .CVModelError import CVModelErrors, DetectResultErrors
 
 
 class CVModel(ABCMeta):
