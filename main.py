@@ -2,6 +2,7 @@ import math
 import cv2
 import os
 import sys
+import argparse
 
 from TrafficPolice.models.YoloModel.YoloModel import YoloModel
 from TrafficPolice.models.Timeline.Timeline import Timeline
@@ -9,6 +10,55 @@ from TrafficPolice.models.Timeline.Timeline import Timeline
 # sys.path.append("models")
 # from YoloModel.YoloModel import YoloModel
 # from Timeline.Timeline import Timeline
+
+def buildArgparser():
+    parser = argparse.ArgumentParser()
+    #在此增加共用參數
+
+    subparsers = parser.add_subparsers(help='choose model')
+
+    # create the parser for the "detect" command
+    parser_detect = subparsers.add_parser('detect', help='detect')
+    #在此增加 detect 參數
+
+    # create the parser for the "yolo" command
+    parser_yolo = subparsers.add_parser('yolo', help='Yolo model')
+    #在此增加 yolo 參數
+    parser_yolo.add_argument('-o', '--option', type=int, help='yolo option')
+
+    # create the parser for the "resa" command
+    parser_resa = subparsers.add_parser('resa', help='Resa model')
+    #在此增加 resa 參數
+    parser_resa.add_argument('-o', '--option', type=str, help='resa option')
+
+    # create the parser for the "smoke" command
+    parser_smoke = subparsers.add_parser('smoke', help='smoke model')
+    #在此增加 smoke 參數
+    parser_smoke.add_argument('-o', '--option', type=float, help='smoke option')
+
+    parser_detect.set_defaults(func=detect)
+    parser_yolo.set_defaults(func=yolo)
+    parser_resa.set_defaults(func=resa)
+    parser_smoke.set_defaults(func=smoke)
+    args = parser.parse_args()
+    args.func(args)
+    return
+
+#執行 detect
+def detect(args):
+    pass
+
+#執行 yolo
+def yolo(args):
+    pass
+
+#執行 resa
+def resa(args):
+    pass
+
+#執行 smoke
+def smoke(args):
+    pass
 
 class TrafficPolice:
 	# 實例化模型但不加載 net
