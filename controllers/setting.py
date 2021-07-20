@@ -1,15 +1,30 @@
 import argparse
+import json
 
+settingsPath = "settings.json"
+
+# 獲取全部設定
 def getAllKeys(args):
-    pass
+    with open(settingsPath, mode = 'r') as file:
+        print(file.read())
+        # print(json.dumps(json.load(file)))
 
+
+# 獲取其中一個設定
 def getKey(args):
-    pass
+    with open(settingsPath, mode = 'r') as file:
+        settings = json.load(file)
+        print(str(settings[args.key]))
 
-    
+
+# 設定
 def setKey(args):
-    pass
-
+    with open(settingsPath, mode = 'w') as file:
+        settings = json.load(file)
+        settings[args.key] = args.val
+        json.dump(settings, file)
+        print('Success', str(settings[args.key])
+        
 
 def buildArgparser():
     # create the top-level parser
@@ -38,5 +53,5 @@ def buildArgparser():
     args = parser.parse_args()
     args.func(args)
 
-
 buildArgparser()
+
