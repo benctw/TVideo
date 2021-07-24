@@ -120,29 +120,7 @@ TrafficPolice
 
 ### class YoloModel(CVModel)
 
-#### \_\_init\_\_(self)
-
-初始化
-
-#### @staticmethod yoloFormatToTwoPoint(centerX: int, centerY: int, width: int, height: int) -> [int, int, int, int]
-
-把中心點坐標和長寬轉換成左上角和右下角點的坐標
-
-`p1` : 左上角點
-
-`p2` : 右下角點
-
-返回的 `list` 對應 `[p1x, p1y, p2x, p2y]`
-
-#### @staticmethod correct(image: cv.Mat) -> cv.Mat
-
-矯正圖像中的矩形成正面
-
-#### @staticmethod getLPNumber(LPImage: cv.Mat) -> str
-
-從圖像中辨識車牌號碼
-
-#### load(self, namesPath: str, configPath: str, weightsPath: str, threshold: float = 0.2, confidence: float = 0.5, minConfidence: float = 0.2) -> void
+#### \_\_init\_\_(self, namesPath: str, configPath: str, weightsPath: str, threshold: float = 0.2, confidence: float = 0.5, minConfidence: float = 0.2) -> void
 
 加載模型
 
@@ -162,6 +140,16 @@ TrafficPolice
 
 > 加載 `.names` 文件中的 `label`　和定義各 `label` 的顔色
 
+#### @staticmethod yoloFormatToTwoPoint(centerX: int, centerY: int, width: int, height: int) -> [int, int, int, int]
+
+把中心點坐標和長寬轉換成左上角和右下角點的坐標
+
+`p1` : 左上角點
+
+`p2` : 右下角點
+
+返回的 `list` 對應 `[p1x, p1y, p2x, p2y]`
+
 #### detectImage(self, image: cv.Mat) -> DetectResult
 
 使用模型辨識圖像
@@ -169,12 +157,6 @@ TrafficPolice
 #### drawBoxes(self, image: cv.Mat, detectResult: DetectResult) -> cv.Mat
 
 在圖像上畫上辨識框，返回新的圖像
-
-#### compareLPNumber(self, detectLPNumber: str) -> float
-
-比較號碼的相似度，返回大於 0 到 1 的值
-
-當返回 1 時代表號碼完全一樣
 
 ***
 
@@ -186,5 +168,19 @@ TrafficPolice
 判斷車輛行駛方向
 
 返回從 `p1` 到 `p2` 位置的單位向量
+
+#### @staticmethod getLPNumber(LPImage: cv.Mat) -> str
+
+從圖像中辨識車牌號碼
+
+#### @staticmethod correct(image: cv.Mat) -> cv.Mat
+
+矯正圖像中的矩形成正面
+
+#### compareLPNumber(self, detectLPNumber: str) -> float
+
+比較號碼的相似度，返回大於 0 到 1 的值
+
+當返回 1 時代表號碼完全一樣
 
 ### 待續 . . .

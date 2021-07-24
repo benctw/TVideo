@@ -34,9 +34,9 @@ class CVModel(ABCMeta):
 		
 		def display(self):
 			header = ['Index', 'ClassID', 'Box', 'Confidence']
-			rowFormat = '{:>12}' * len(header)
-			print(rowFormat.format('', *header))
-			for i in range(0, self.classIDs):
+			rowFormat = '{!s:15} {!s:15} {!s:30} {!s:15}'
+			print(rowFormat.format(*header))
+			for i in range(0, len(self.classIDs)):
 				print(rowFormat.format(i, self.classIDs[i], self.boxes[i], self.confidences[i]))
 
 	@staticmethod

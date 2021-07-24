@@ -1,8 +1,11 @@
 import math
+import numpy as np
 import cv2
 import os
 import sys
 import argparse
+import easyocr
+import Levenshtein
 
 from TrafficPolice.models.YoloModel.YoloModel import YoloModel
 from TrafficPolice.models.Timeline.Timeline import Timeline
@@ -61,11 +64,19 @@ def smoke(args):
     pass
 
 class TrafficPolice:
-	# 實例化模型但不加載 net
-	LPModel = YoloModel()
 
 	def __init__(self):
-		pass
+		self.LPModel = YoloModel(
+			namesPath = '',
+			configPath = '',
+			weightsPath = '',
+			threshold = '',
+			confidence = '',
+			minConfidence = ''
+		)
+		self.LPNumber = ""
+
+	#//////// 共同 ////////#
 
 	def loadImage(self):
 		pass
@@ -77,6 +88,52 @@ class TrafficPolice:
 	def updataMarkPoint(self, start, end):
 		pass
 
+	#//////// 車牌 ////////#
+
+	# 獲得車牌號碼
+	@staticmethod
+	def getLPNumber(LPImage):
+		reader = easyocr.Reader(['en']) # need to run only once to load model into memory
+		return reader.readtext(LPImage, detail = 0)
+	
+	# 矯正
+	@staticmethod
+	def correct(image):
+		gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+		blurred = cv2.GaussianBlur(gray, (11, 11), 0)
+		edged = cv2.Canny(blurred, 20, 160)          # 边缘检测
+
+		cnts,_ = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)  # 轮廓检测
+
+		docCnt = None
+		if len(cnts) > 0:
+			cnts = sorted(cnts, key=cv2.contourArea, reverse=True) # 根据轮廓面积从大到小排序
+			for c in cnts:
+				peri = cv2.arcLength(c, True)                         # 计算轮廓周长
+				approx = cv2.approxPolyDP(c, 0.02*peri, True)         # 轮廓多边形拟合
+				# 轮廓为4个点表示找到纸张
+				if len(approx) == 4:
+					docCnt = approx
+					break
+		for peak in docCnt:
+			peak = peak[0]
+			cv2.circle(image, tuple(peak), 10, (255, 0, 0))
+			
+		H, W = image.shape[:2]
+
+		point_set_0 = np.float32([docCnt[1,0],docCnt[2,0],docCnt[3,0],docCnt[0,0]])
+		point_set_1 = np.float32([[0, 0],[0, 140],[440, 140],[440, 0]])
+
+		# 变换矩阵
+		mat = cv2.getPerspectiveTransform(point_set_0, point_set_1)
+		# 投影变换
+		lic = cv2.warpPerspective(image, mat, (440, 140))
+
+	
+	# 比較車牌號碼 返回相似度 在0~1之間
+	def compareLPNumber(self, detectLPNumber):
+		return 1 if self.LPNumber == detectLPNumber else Levenshtein.ratio(detectLPNumber, self.LPNumber)
+
 	# 辨識車牌
 	def LPProcess(self, path):
 		if path.lower().endswith(('.jpg', '.jpeg', '.png')):
@@ -84,19 +141,18 @@ class TrafficPolice:
 			detectResult = self.LPModel.detectImage(image)
 			if detectResult.hasResult():
 				LPImage = detectResult.crop(image)
-				# correctedLPImage = self.LPModel.correct(LPImage)
-				LPNumber = self.LPModel.getLPNumber(LPImage)
-				print(LPNumber)
-				similarity = self.LPModel.compareLPNumber(LPNumber)
+				# correctedLPImage = self.correct(LPImage)
+				LPNumber = self.getLPNumber(LPImage)
+				print('[INFO] ', LPNumber)
+				similarity = self.compareLPNumber(LPNumber)
 				if similarity == 1:
-					print('找到對應車牌號碼: {}'.format(LPNumber))
+					print('[INFO] 找到對應車牌號碼: {}'.format(LPNumber))
 		elif path.lower().endswith(('.mp4', '.avi')):
 			videoCapture = cv2.VideoCapture(path)
 			detectResult = self.LPModel.detectVideo(videoCapture)
 		else:
-			print('不支持的文件格式！')
+			print('[INFO] 不支持的文件格式！')
 			return
-		
 
 	# 辨識車輛
 	def detectCar(self):
@@ -121,6 +177,12 @@ class TrafficPolice:
 
 	# 裁剪影片從 start 到 end
 	def cropVideo(self, start, end):
+		pass
+
+	def markVehicle(box):
+		pass
+	
+	def guessPositionOfNextMoment():
 		pass
 
 	# 儲存片段到指定路徑
