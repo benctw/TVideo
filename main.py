@@ -65,15 +65,9 @@ def smoke(args):
 
 class TrafficPolice:
 
-	def __init__(self):
-		self.LPModel = YoloModel(
-			namesPath = '',
-			configPath = '',
-			weightsPath = '',
-			threshold = '',
-			confidence = '',
-			minConfidence = ''
-		)
+	def __init__(self, LPModel):
+		###!!!
+		self.LPModel = LPModel
 		self.LPNumber = ""
 
 	#//////// 共同 ////////#
@@ -149,7 +143,19 @@ class TrafficPolice:
 					print('[INFO] 找到對應車牌號碼: {}'.format(LPNumber))
 		elif path.lower().endswith(('.mp4', '.avi')):
 			videoCapture = cv2.VideoCapture(path)
-			detectResult = self.LPModel.detectVideo(videoCapture)
+			detectResults = self.LPModel.detectVideo(videoCapture)
+
+			###!!!
+			# 使用 XVID 編碼
+			fourcc = cv2.VideoWriter_fourcc(*'XVID')
+
+			out = cv2.VideoWriter('output.mp4', fourcc, 20.0, (640, 360))
+			for i in range(0, len(LPModel.images)):
+				out.write(LPModel.drawBoxes(LPModel.images[i], detectResults[i]))
+				print("[INFO] 處理中 {}".format(i))
+			out.release()
+			print("[INFO] 完成")
+
 		else:
 			print('[INFO] 不支持的文件格式！')
 			return
@@ -191,10 +197,24 @@ class TrafficPolice:
 
 	# 生成報告
 	def createReport():
-    	# TODO 先定義 report 的格式和内容
+		# TODO 先定義 report 的格式和内容
 		pass
 	
 	# 版本更新
 	@staticmethod
 	def versionUpdate():
 		pass
+
+
+if __name__ == '__main__':
+	LPModel = YoloModel(
+		namesPath = '',
+		configPath = '',
+		weightsPath = '',
+		# threshold = ,
+		# confidence = ,
+		# minConfidence = 
+	)
+	tp = TrafficPolice(LPModel)
+	imageOrVideoPath = ""
+	tp.LPProcess(imageOrVideoPath)

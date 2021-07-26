@@ -14,17 +14,18 @@ class Data:
 		self.hasLicensePlate = hasLicensePlate
 		self.licensePlatePosition = licensePlatePosition
 		self.vehicles = vehicles
-		
 
 class VehicleData:
 	def __init__(
 		self, 
 		codename,
 		position,
+		direction,
 		possiblePositionAtTheNextMoment
 	):
 		self.codename = codename
 		self.position = position
+		self.direction = direction
 		self.possiblePositionAtTheNextMoment = possiblePositionAtTheNextMoment
 
 

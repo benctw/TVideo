@@ -10,7 +10,7 @@ from ..CVModel.CVModel import CVModel
 # 應該做成抽象對象，被繼承
 class YoloModel(CVModel):
 
-	def __init__(self, namesPath, configPath, weightsPath, threshold = 0.2, confidence = 0.5, minConfidence = 0.2):
+	def __init__(self, namesPath, configPath, weightsPath, threshold = 0.2, confidence = 0.2, minConfidence = 0.2):
 		print("[INFO] Loading YOLO Model...")
 		self.namesPath = os.path.join(*namesPath.split('\\'))
 		self.configPath = os.path.join(*configPath.split('\\'))

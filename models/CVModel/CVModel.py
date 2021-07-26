@@ -7,7 +7,8 @@ from .CVModelError import CVModelErrors, DetectResultErrors
 class CVModel(ABCMeta):
 	__metaclass__ = ABCMeta
 	def __init__(self):
-		pass
+		###!!!
+		self.images = []
 
 	class DetectResult:
 		def __init__(self, classIDs = [], boxes = [], confidences = []):
@@ -39,8 +40,8 @@ class CVModel(ABCMeta):
 			for i in range(0, len(self.classIDs)):
 				print(rowFormat.format(i, self.classIDs[i], self.boxes[i], self.confidences[i]))
 
-	@staticmethod
-	def getImagesFromVideo(videoCapture):
+	# @staticmethod
+	def getImagesFromVideo(self, videoCapture):
 		videoImages = []
 		rval = False
 		if videoCapture.isOpened(): rval, videoFrame = videoCapture.read() #判斷是否開啟影片
@@ -48,6 +49,8 @@ class CVModel(ABCMeta):
 			videoImages.append(videoFrame)
 			rval, videoFrame = videoCapture.read()
 		videoCapture.release()
+		###!!!
+		self.images = videoImages
 		return videoImages
 
 	@abstractmethod
