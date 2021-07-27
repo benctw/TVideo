@@ -138,7 +138,7 @@ class TrafficPolice:
 				# correctedLPImage = self.correct(LPImage)
 				LPNumber = self.getLPNumber(LPImage)
 				print('[INFO] ', LPNumber)
-				similarity = self.compareLPNumber(LPNumber)
+				similarity = self.compareLPNumber(''.join(LPNumber))
 				if similarity == 1:
 					print('[INFO] 找到對應車牌號碼: {}'.format(LPNumber))
 		elif path.lower().endswith(('.mp4', '.avi')):
@@ -147,12 +147,13 @@ class TrafficPolice:
 
 			###!!!
 			# 使用 XVID 編碼
-			fourcc = cv2.VideoWriter_fourcc(*'XVID')
+			fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 
-			out = cv2.VideoWriter('output.mp4', fourcc, 20.0, (640, 360))
-			for i in range(0, len(LPModel.images)):
-				out.write(LPModel.drawBoxes(LPModel.images[i], detectResults[i]))
+			out = cv2.VideoWriter('store/output/output.mp4', fourcc, 20.0, (640, 360))
+			for i in range(0, len(self.LPModel.images)):
+				out.write(self.LPModel.drawBoxes(self.LPModel.images[i], detectResults[i]))
 				print("[INFO] 處理中 {}".format(i))
+				print(detectResults[i].display())
 			out.release()
 			print("[INFO] 完成")
 
@@ -216,5 +217,6 @@ if __name__ == '__main__':
 		# minConfidence = 
 	)
 	tp = TrafficPolice(LPModel)
+	tp.LPNumber = "AUC2567"
 	imageOrVideoPath = ""
 	tp.LPProcess(imageOrVideoPath)

@@ -1,11 +1,9 @@
-import cv2
 import numpy as np
-from abc import ABCMeta, abstractmethod
+from abc import ABC, ABCMeta, abstractmethod
 from .CVModelError import CVModelErrors, DetectResultErrors
 
 
-class CVModel(ABCMeta):
-	__metaclass__ = ABCMeta
+class CVModel(ABC):
 	def __init__(self):
 		###!!!
 		self.images = []
@@ -39,6 +37,7 @@ class CVModel(ABCMeta):
 			print(rowFormat.format(*header))
 			for i in range(0, len(self.classIDs)):
 				print(rowFormat.format(i, self.classIDs[i], self.boxes[i], self.confidences[i]))
+				
 
 	# @staticmethod
 	def getImagesFromVideo(self, videoCapture):
@@ -58,9 +57,10 @@ class CVModel(ABCMeta):
 		raise NotImplemented
 
 	# 根據 interval 的間隔遍歷一遍影片的幀
-	def detectVideo(self, videoCapture, interval):
+	def detectVideo(self, videoCapture, interval = 1):
 		results = []
-		videoImages = self.getImagesFromVideo(videoCapture)
-		for image in videoImages[::interval]:
+		# videoImages = self.getImagesFromVideo(videoCapture)
+		self.getImagesFromVideo(videoCapture)
+		for image in self.images[::interval]:
 			results.append(self.detectImage(image))
 		return results

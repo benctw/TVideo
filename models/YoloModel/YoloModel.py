@@ -1,20 +1,16 @@
 import numpy as np
-import argparse
-import time
 import cv2
-import os
 from .YoloModelError import YoloModelErrors
 from ..CVModel.CVModel import CVModel
-
 
 # 應該做成抽象對象，被繼承
 class YoloModel(CVModel):
 
 	def __init__(self, namesPath, configPath, weightsPath, threshold = 0.2, confidence = 0.2, minConfidence = 0.2):
 		print("[INFO] Loading YOLO Model...")
-		self.namesPath = os.path.join(*namesPath.split('\\'))
-		self.configPath = os.path.join(*configPath.split('\\'))
-		self.weightsPath = os.path.join(*weightsPath.split('\\'))
+		self.namesPath = namesPath
+		self.configPath = configPath
+		self.weightsPath = weightsPath
 		self.threshold = threshold
 		self.confidence = confidence
 		self.minConfidence = minConfidence
