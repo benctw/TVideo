@@ -1,6 +1,8 @@
 import math
 import numpy as np
 import cv2
+# 以下這一句為了解決vscode報錯問題，運行時沒必要
+# from cv2 import cv2
 import os
 import sys
 import argparse
@@ -215,17 +217,26 @@ class TrafficPolice:
 
 
 if __name__ == '__main__':
-	LPModel = YoloModel(
-		namesPath = __dirname + "/static/model/lp.names",
-		configPath = __dirname + "/static/model/lp.cfg",
-		weightsPath = __dirname + "/static/model/lp.weights"
-		# threshold = ,
-		# confidence = ,
-		# minConfidence = 
-	)
-	tp = TrafficPolice(LPModel)
-	tp.LPNumber = "825BHW"
-	imageOrVideoPath = "/content/直行01-(825-BHW，060333-060335).mp4"
-	tp.LPProcess(imageOrVideoPath)
+	# LPModel = YoloModel(
+	# 	namesPath = __dirname + "/static/model/lp.names",
+	# 	configPath = __dirname + "/static/model/lp.cfg",
+	# 	weightsPath = __dirname + "/static/model/lp.weights"
+	# )
+	# tp = TrafficPolice(LPModel)
+	# tp.LPNumber = "825BHW"
+	# imageOrVideoPath = "/content/gdrive/MyDrive/LP/detectImage/11.jpg"
+	# tp.LPProcess(imageOrVideoPath)
 
+	yoloModel = YoloModel(
+		namesPath = "/content/gdrive/MyDrive/yolo3/coco.names",
+		configPath = "/content/gdrive/MyDrive/yolo3/yolov3.cfg",
+		weightsPath = "/content/gdrive/MyDrive/yolo3/yolov3.weights"
+	)
+	image = cv2.imread("/content/gdrive/MyDrive/image/2.jpg")
+	detectResult = yoloModel.detectImage(image)
+	detectResult.display()
+	resultImage = yoloModel.drawBoxes(detectResult)
+	# resultImage =  detectResult.drawBoxes()
+	cv2.imwrite("/content/TrafficPolice/store/output/1.jpg", resultImage)
+	
 
