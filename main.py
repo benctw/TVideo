@@ -6,9 +6,12 @@ import sys
 import argparse
 import easyocr
 import Levenshtein
+from rich.progress import track
 
-from TrafficPolice.models.YoloModel.YoloModel import YoloModel
-from TrafficPolice.models.Timeline.Timeline import Timeline
+from models.YoloModel.YoloModel import YoloModel
+from models.Timeline.Timeline import Timeline
+
+__dirname = os.path.dirname(os.path.abspath(__file__))
 
 # sys.path.append("models")
 # from YoloModel.YoloModel import YoloModel
@@ -144,18 +147,18 @@ class TrafficPolice:
 		elif path.lower().endswith(('.mp4', '.avi')):
 			videoCapture = cv2.VideoCapture(path)
 			detectResults = self.LPModel.detectVideo(videoCapture)
+			self.saveVideo(self.LPModel.images, "store/output/output.mp4")
 
 			###!!!
-			# 使用 XVID 編碼
-			fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+			# fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 
-			out = cv2.VideoWriter('store/output/output.mp4', fourcc, 20.0, (640, 360))
-			for i in range(0, len(self.LPModel.images)):
-				out.write(self.LPModel.drawBoxes(self.LPModel.images[i], detectResults[i]))
-				print("[INFO] 處理中 {}".format(i))
-				print(detectResults[i].display())
-			out.release()
-			print("[INFO] 完成")
+			# out = cv2.VideoWriter('/content/TrafficPolice/store/output/output.mp4', fourcc, 20.0, (640, 360))
+			# for i in track(range(0, len(self.LPModel.images)), "[INFO] 寫入影片"):
+			# 	out.write(self.LPModel.drawBoxes(self.LPModel.images[i], detectResults[i]))
+			# 	print("[INFO] 處理中 {}".format(i))
+			# 	print(detectResults[i].display())
+			# out.release()
+			# print("[INFO] 完成")
 
 		else:
 			print('[INFO] 不支持的文件格式！')
@@ -192,9 +195,13 @@ class TrafficPolice:
 	def guessPositionOfNextMoment():
 		pass
 
-	# 儲存片段到指定路徑
-	def saveVideo(self, video, path):
-		pass
+	# 儲存片段到指定路徑 ###只支持MP4
+	def saveVideo(self, frames, path):
+		fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+		out = cv2.VideoWriter(path, fourcc, 20.0, (640, 360))
+		for frame in track(frames, "[INFO] save video"):
+			out.write(frame)
+		out.release()
 
 	# 生成報告
 	def createReport():
@@ -209,14 +216,16 @@ class TrafficPolice:
 
 if __name__ == '__main__':
 	LPModel = YoloModel(
-		namesPath = '',
-		configPath = '',
-		weightsPath = '',
+		namesPath = __dirname + "/static/model/lp.names",
+		configPath = __dirname + "/static/model/lp.cfg",
+		weightsPath = __dirname + "/static/model/lp.weights"
 		# threshold = ,
 		# confidence = ,
 		# minConfidence = 
 	)
 	tp = TrafficPolice(LPModel)
-	tp.LPNumber = "AUC2567"
-	imageOrVideoPath = ""
+	tp.LPNumber = "825BHW"
+	imageOrVideoPath = "/content/直行01-(825-BHW，060333-060335).mp4"
 	tp.LPProcess(imageOrVideoPath)
+
+

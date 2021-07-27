@@ -1,7 +1,8 @@
 import numpy as np
+import cv2
 from abc import ABC, ABCMeta, abstractmethod
 from .CVModelError import CVModelErrors, DetectResultErrors
-
+from rich.progress import track
 
 class CVModel(ABC):
 	def __init__(self):
@@ -41,16 +42,13 @@ class CVModel(ABC):
 
 	# @staticmethod
 	def getImagesFromVideo(self, videoCapture):
-		videoImages = []
 		rval = False
-		if videoCapture.isOpened(): rval, videoFrame = videoCapture.read() #判斷是否開啟影片
+		if videoCapture.isOpened(): rval, frame = videoCapture.read() #判斷是否開啟影片
 		while rval:	#擷取視頻至結束
-			videoImages.append(videoFrame)
-			rval, videoFrame = videoCapture.read()
+			self.images.append(frame)
+			rval, frame = videoCapture.read()
+    ### 在這釋放？
 		videoCapture.release()
-		###!!!
-		self.images = videoImages
-		return videoImages
 
 	@abstractmethod
 	def detectImage(image):
@@ -61,6 +59,20 @@ class CVModel(ABC):
 		results = []
 		# videoImages = self.getImagesFromVideo(videoCapture)
 		self.getImagesFromVideo(videoCapture)
-		for image in self.images[::interval]:
+		for image in track(self.images[::interval], "detecting"):
 			results.append(self.detectImage(image))
 		return results
+
+	# def detectVideo2(self, videoCapture, interval = 1):
+	# 	results = []
+	# 	rval = False
+	# 	# 判斷是否開啟影片
+	# 	if videoCapture.isOpened(): rval, frame = videoCapture.read()
+	# 	frameLength = int(videoCapture.get(cv2.CAP_PROP_FRAME_COUNT))
+	# 	while rval:
+  #   for i in track(frameLength, "detecting"):
+	# 		results.append(self.detectImage(frame))
+	# 		rval, frame = videoCapture.read()
+	# 	### 在這釋放？
+	# 	videoCapture.release()
+	# 	return results
