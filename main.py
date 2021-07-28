@@ -201,9 +201,11 @@ class TrafficPolice:
 	@staticmethod
 	def saveVideo(images, path):
 		fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-		out = cv2.VideoWriter(path, fourcc, 20.0, (640, 360))
+		height, width = images[0].shape[:2]
+		print("height", height, "width", width)
+		out = cv2.VideoWriter(path, fourcc, 20.0, (int(width), int(height)))
 		for image in track(images, "save video"):
-			out.write(images)
+			out.write(image)
 		out.release()
 
 	# 生成報告
