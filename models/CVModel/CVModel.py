@@ -116,7 +116,7 @@ class DetectResult:
 			print(rowFormat.format(i, self.labels[self.classIDs[i]], self.classIDs[i], self.boxes[i], self.confidences[i]))
 
 	def drawBoxes(self):
-		self.colors = self.colors if colors != None else self.autoSelectColors()
+		self.colors = self.colors if not self.colors is None else self.autoSelectColors()
 		resultImage = self.image.copy()
 		idxs = cv2.dnn.NMSBoxes(self.boxes, self.confidences, self.confidence, self.threshold)
 		if len(idxs) > 0:

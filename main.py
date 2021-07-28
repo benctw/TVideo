@@ -149,7 +149,7 @@ class TrafficPolice:
 		elif path.lower().endswith(('.mp4', '.avi')):
 			videoCapture = cv2.VideoCapture(path)
 			detectResults = self.LPModel.detectVideo(videoCapture)
-			self.saveVideo(self.LPModel.images, "store/output/output.mp4")
+			self.saveVideo(detectResults.drawBoxes(), "/content/gdrive/MyDrive/video/result.mp4")
 
 			###!!!
 			# fourcc = cv2.VideoWriter_fourcc(*'mp4v')
@@ -241,8 +241,7 @@ if __name__ == '__main__':
 	detectResult = yoloModel.detectImage(image)
 	video = cv2.VideoCapture("/content/gdrive/MyDrive/video/直行01-(825-BHW，060333-060335).mp4")
 	detectResults = yoloModel.detectVideo(video)
-	
-	TrafficPolice.saveVideo(detectResults.detectResults, "/content/gdrive/MyDrive/video/直行01-(825-BHW，060333-060335).mp4")
+	TrafficPolice.saveVideo(detectResults.drawBoxes(), "/content/gdrive/MyDrive/video/result.mp4")
 	# detectResult.display()
 	# resultImage = detectResult.drawBoxes()
 	# cv2.imwrite("/content/TrafficPolice/store/output/1.jpg", resultImage)
