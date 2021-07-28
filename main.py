@@ -235,8 +235,10 @@ if __name__ == '__main__':
 	image = cv2.imread("/content/gdrive/MyDrive/image/2.jpg")
 	detectResult = yoloModel.detectImage(image)
 	detectResult.display()
-	resultImage = yoloModel.drawBoxes(detectResult)
-	# resultImage =  detectResult.drawBoxes()
+	detectResult.setColor(0, [255, 255])
+	resultImage = detectResult.drawBoxes()
 	cv2.imwrite("/content/TrafficPolice/store/output/1.jpg", resultImage)
+	
+	# video = cv2.VideoCapture("/content/gdrive/MyDrive/video/直行09-(116KJT，174407-174409).mp4")
 	
 

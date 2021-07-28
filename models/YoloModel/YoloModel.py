@@ -16,7 +16,9 @@ class YoloModel(CVModel):
 		self.minConfidence = minConfidence
 		## TODO error handling
 		self.labels = open(self.namesPath).read().strip().split('\n')
-		self.colors = np.random.randint(0, 255, size = (len(self.labels), 3), dtype = "uint8")
+
+		# self.colors = np.random.randint(0, 255, size = (len(self.labels), 3), dtype = "uint8")
+
 		self.net = cv2.dnn.readNetFromDarknet(self.configPath, self.weightsPath)
 		self.outputLayerNames = [self.net.getLayerNames()[i[0] - 1] for i in self.net.getUnconnectedOutLayers()]
 		print("[INFO] Loaded YOLO Model!")
@@ -32,7 +34,7 @@ class YoloModel(CVModel):
 		return [p1x, p1y, p2x, p2y]
 
 	def detectImage(self, image):
-		result = DetectResult(image)
+		result = DetectResult(image, labels=self.labels)
 		( H, W ) = image.shape[:2]
 		blob = cv2.dnn.blobFromImage(image, 1 / 255, (416, 416), swapRB = True, crop = False)
 		self.net.setInput(blob)
@@ -53,8 +55,10 @@ class YoloModel(CVModel):
 	def drawBoxes(self, detectResult, threshold = 0.2, confidence = 0.2):
 		resultImage = detectResult.image.copy()
 		idxs = cv2.dnn.NMSBoxes(detectResult.boxes, detectResult.confidences, confidence, threshold)
+		print("iiiiiiiiiiiiiiiiiiiii", idxs)
 		if len(idxs) > 0:
 			for i in idxs.flatten():
+				print("iiiiiiiiiiiiiiiiiiiii", i)
 				p1x, p1y, p2x, p2y = detectResult.boxes[i]
 				color = [int(c) for c in self.colors[detectResult.classIDs[i]]]
 				cv2.rectangle(resultImage, (p1x, p1y), (p2x, p2y), color, 2)
