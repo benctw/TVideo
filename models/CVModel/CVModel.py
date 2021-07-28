@@ -8,6 +8,7 @@ class CVModel(ABC):
 	def __init__(self):
 		###!!!
 		self.images = []
+		self.labels = []
 
 	# @staticmethod
 	def getImagesFromVideo(self, videoCapture):
@@ -16,20 +17,21 @@ class CVModel(ABC):
 		while rval:	#擷取視頻至結束
 			self.images.append(frame)
 			rval, frame = videoCapture.read()
-    ### 在這釋放？
+    	### 在這釋放？
 		videoCapture.release()
 
 	@abstractmethod
-	def detectImage(image):
+	def detectImage(self, image):
 		raise NotImplemented
 
 	# 根據 interval 的間隔遍歷一遍影片的幀
 	def detectVideo(self, videoCapture, interval = 1):
-		results = []
+		results = DetectResults(self.labels)
+		# results = []
 		# videoImages = self.getImagesFromVideo(videoCapture)
 		self.getImagesFromVideo(videoCapture)
 		for image in track(self.images[::interval], "detecting"):
-			results.append(self.detectImage(image))
+			results.add(self.detectImage(image))
 		return results
 
 	# def detectVideo2(self, videoCapture, interval = 1):
@@ -46,11 +48,11 @@ class CVModel(ABC):
 	# 	videoCapture.release()
 	# 	return results
 
+
+
 ### 改成只針對yolo的結果
 class DetectResult:
-	def __init__(self, image, labels = [], threshold = 0.2, confidence = 0.2):
-		# if not(isinstance(boxes, list) and isinstance(confidences, list) and isinstance(classIDs, list)):
-		# 	raise DetectResultErrors.ArgumentTypeError(classIDs, boxes, confidences, list)
+	def __init__(self, image, labels = [], threshold = 0.2, confidence = 0.2, colors = None):
 		self.image = image
 		self.labels = labels
 		self.threshold = threshold
@@ -58,27 +60,38 @@ class DetectResult:
 		self.boxes = []
 		self.confidences = []
 		self.classIDs = []
-		self.autoSelectColors()
+		self.colors = colors
 
 	def autoSelectColors(self):
 		self.colors = np.random.randint(0, 255, size = (len(self.labels), 3), dtype = "uint8")
-
-	def setColor(self, index, color):
-		if not isinstance(index, (int, str)) and isinstance(color, (list, tuple)):
+	
+	@staticmethod
+	def checkColor(color):
+		if isinstance(color, (list, tuple)):
 			raise TypeError
 		if len(color) != 3:
 			raise ValueError("color 長度不為 3")
+
+	def setColors(self, colors):
+		for color in colors:
+			self.checkColor(color)
+			color = [max(0, min(round(c), 255)) for c in color]
+		self.colors = colors
+		return self
+
+	def setColor(self, index, color):
+		if not isinstance(index, (int, str)):
+			raise TypeError
+		self.checkColor(color)
 		if type(index) is str:
 			try:
 				index = self.labels.index(index)
 			except ValueError:
 				raise ValueError("沒有此 label")
-		for c in color:
-			if c < 0:
-				c = 0
-			elif c > 255:
-				c = 255
+		# color 在 0 到 255 範圍
+		color = [max(0, min(round(c), 255)) for c in color]
 		self.colors[index] = color
+		return self
 
 	# 添加結果
 	def add(self, classID, box, confidence):
@@ -103,6 +116,7 @@ class DetectResult:
 			print(rowFormat.format(i, self.labels[self.classIDs[i]], self.classIDs[i], self.boxes[i], self.confidences[i]))
 
 	def drawBoxes(self):
+		self.colors = self.colors if colors != None else self.autoSelectColors()
 		resultImage = self.image.copy()
 		idxs = cv2.dnn.NMSBoxes(self.boxes, self.confidences, self.confidence, self.threshold)
 		if len(idxs) > 0:
@@ -113,3 +127,31 @@ class DetectResult:
 				text = "{}: {:.4f}".format(self.labels[self.classIDs[i]], self.confidences[i])
 				cv2.putText(resultImage, text, (p1x, p1y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 		return resultImage
+
+
+class DetectResults:
+	def __init__(self, labels = [], colors = None):
+		self.detectResults = []
+		self.labels = labels
+		self.colors = colors if colors != None else np.random.randint(0, 255, size = (len(self.labels), 3), dtype = "uint8")
+
+	def add(self, detectResult):
+		if not isinstance(detectResult, DetectResult):
+			raise TypeError("參數必須是 {} 類型".format(DetectResult))
+		if not self.colors is None:
+			detectResult.setColors(self.colors)
+		self.detectResults.append(detectResult)
+		return self
+
+	def setColors(self, colors):
+		for detectResult in self.detectResults:
+			detectResult.setColors(colors)
+		self.colors = colors
+		return self
+
+	def drawBoxes(self):
+		results = []
+		for detectResult in self.detectResults:
+			results.append(detectResult.drawBoxes())
+		return results
+		

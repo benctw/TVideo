@@ -198,11 +198,12 @@ class TrafficPolice:
 		pass
 
 	# 儲存片段到指定路徑 ###只支持MP4
-	def saveVideo(self, frames, path):
+	@staticmethod
+	def saveVideo(images, path):
 		fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 		out = cv2.VideoWriter(path, fourcc, 20.0, (640, 360))
-		for frame in track(frames, "[INFO] save video"):
-			out.write(frame)
+		for image in track(images, "save video"):
+			out.write(images)
 		out.release()
 
 	# 生成報告
@@ -215,6 +216,7 @@ class TrafficPolice:
 	def versionUpdate():
 		pass
 
+from models.CVModel.CVModel import DetectResult
 
 if __name__ == '__main__':
 	# LPModel = YoloModel(
@@ -226,19 +228,23 @@ if __name__ == '__main__':
 	# tp.LPNumber = "825BHW"
 	# imageOrVideoPath = "/content/gdrive/MyDrive/LP/detectImage/11.jpg"
 	# tp.LPProcess(imageOrVideoPath)
-
 	yoloModel = YoloModel(
 		namesPath = "/content/gdrive/MyDrive/yolo3/coco.names",
 		configPath = "/content/gdrive/MyDrive/yolo3/yolov3.cfg",
-		weightsPath = "/content/gdrive/MyDrive/yolo3/yolov3.weights"
+		weightsPath = "/content/gdrive/MyDrive/yolo3/yolov3.weights",
+		## 至少要有的信心
+		confidence=0.2,
+		## 可重疊程度
+		threshold=0.7
 	)
-	image = cv2.imread("/content/gdrive/MyDrive/image/2.jpg")
+	image = cv2.imread("/content/gdrive/MyDrive/image/1.jpg")
 	detectResult = yoloModel.detectImage(image)
-	detectResult.display()
-	detectResult.setColor(0, [255, 255])
-	resultImage = detectResult.drawBoxes()
-	cv2.imwrite("/content/TrafficPolice/store/output/1.jpg", resultImage)
+	video = cv2.VideoCapture("/content/gdrive/MyDrive/video/直行01-(825-BHW，060333-060335).mp4")
+	detectResults = yoloModel.detectVideo(video)
 	
-	# video = cv2.VideoCapture("/content/gdrive/MyDrive/video/直行09-(116KJT，174407-174409).mp4")
+	TrafficPolice.saveVideo(detectResults.detectResults, "/content/gdrive/MyDrive/video/直行01-(825-BHW，060333-060335).mp4")
+	# detectResult.display()
+	# resultImage = detectResult.drawBoxes()
+	# cv2.imwrite("/content/TrafficPolice/store/output/1.jpg", resultImage)
 	
 
