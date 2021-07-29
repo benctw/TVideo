@@ -1,24 +1,28 @@
 import numpy as np
 import cv2
-from abc import ABC, ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 from .CVModelError import CVModelErrors, DetectResultErrors
 from rich.progress import track
 
 class CVModel(ABC):
 	def __init__(self):
-		###!!!
 		self.images = []
 		self.labels = []
 
-	# @staticmethod
-	def getImagesFromVideo(self, videoCapture):
+	@staticmethod
+	def getFrames(self, videoCapture):
+		if type(videoCapture) is str:
+			videoCapture = cv2.VideoCapture(videoCapture)
+		frames = []
 		rval = False
 		if videoCapture.isOpened(): rval, frame = videoCapture.read() #判斷是否開啟影片
 		while rval:	#擷取視頻至結束
-			self.images.append(frame)
+
+			frames.append(frame)
+
 			rval, frame = videoCapture.read()
-    	### 在這釋放？
 		videoCapture.release()
+		return frames
 
 	@abstractmethod
 	def detectImage(self, image):
@@ -26,28 +30,13 @@ class CVModel(ABC):
 
 	# 根據 interval 的間隔遍歷一遍影片的幀
 	def detectVideo(self, videoCapture, interval = 1):
+		if type(videoCapture) is str:
+			videoCapture = cv2.VideoCapture(videoCapture)
 		results = DetectResults(self.labels)
-		# results = []
-		# videoImages = self.getImagesFromVideo(videoCapture)
-		self.getImagesFromVideo(videoCapture)
+		self.images = self.getFrames(videoCapture)
 		for image in track(self.images[::interval], "detecting"):
 			results.add(self.detectImage(image))
 		return results
-
-	# def detectVideo2(self, videoCapture, interval = 1):
-	# 	results = []
-	# 	rval = False
-	# 	# 判斷是否開啟影片
-	# 	if videoCapture.isOpened(): rval, frame = videoCapture.read()
-	# 	frameLength = int(videoCapture.get(cv2.CAP_PROP_FRAME_COUNT))
-	# 	while rval:
-  #   for i in track(frameLength, "detecting"):
-	# 		results.append(self.detectImage(frame))
-	# 		rval, frame = videoCapture.read()
-	# 	### 在這釋放？
-	# 	videoCapture.release()
-	# 	return results
-
 
 
 ### 改成只針對yolo的結果
@@ -62,15 +51,15 @@ class DetectResult:
 		self.classIDs = []
 		self.colors = colors
 
-	def autoSelectColors(self):
-		self.colors = np.random.randint(0, 255, size = (len(self.labels), 3), dtype = "uint8")
-	
 	@staticmethod
 	def checkColor(color):
 		if isinstance(color, (list, tuple)):
 			raise TypeError
 		if len(color) != 3:
 			raise ValueError("color 長度不為 3")
+
+	def autoSelectColors(self):
+		self.colors = np.random.randint(0, 255, size = (len(self.labels), 3), dtype = "uint8")
 
 	def setColors(self, colors):
 		for color in colors:

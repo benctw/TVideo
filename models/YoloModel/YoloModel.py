@@ -32,6 +32,8 @@ class YoloModel(CVModel):
 		return [p1x, p1y, p2x, p2y]
 
 	def detectImage(self, image):
+		if type(image) is str:
+			image = cv2.imread(image)
 		result = DetectResult(image, self.labels, self.threshold, self.confidence)
 		( H, W ) = image.shape[:2]
 		blob = cv2.dnn.blobFromImage(image, 1 / 255, (416, 416), swapRB = True, crop = False)

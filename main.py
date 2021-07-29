@@ -15,9 +15,6 @@ from models.Timeline.Timeline import Timeline
 
 __dirname = os.path.dirname(os.path.abspath(__file__))
 
-# sys.path.append("models")
-# from YoloModel.YoloModel import YoloModel
-# from Timeline.Timeline import Timeline
 
 def buildArgparser():
     parser = argparse.ArgumentParser()
@@ -52,28 +49,43 @@ def buildArgparser():
     args.func(args)
     return
 
-#執行 detect
+# 執行 detect
 def detect(args):
-    pass
+    path = input()
+	while path != ".":
+		TrafficPolice.share.process(path)
+		path = input()
+	print("end")
 
-#執行 yolo
+# 執行 yolo
 def yolo(args):
-    pass
+	path = input()
+	while path != ".":
+		TrafficPolice.share.LPModel.detectImage(path)
+		path = input()
+	print("end")
 
-#執行 resa
+# 執行 resa
 def resa(args):
     pass
 
-#執行 smoke
+# 執行 smoke
 def smoke(args):
     pass
 
 class TrafficPolice:
-
-	def __init__(self, LPModel):
+	share = TrafficPolice()
+	def __init__(self):
 		###!!!
-		self.LPModel = LPModel
-		self.LPNumber = ""
+		self.LPModel = YoloModel(
+			namesPath   = __dirname + "/static/model/lp.names",
+			configPath  = __dirname + "/static/model/lp.cfg",
+			weightsPath = __dirname + "/static/model/lp.weights"
+		)
+		self.targetLPNumber = ""
+
+	def process():
+		pass
 
 	#//////// 共同 ////////#
 
@@ -100,16 +112,16 @@ class TrafficPolice:
 	def correct(image):
 		gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 		blurred = cv2.GaussianBlur(gray, (11, 11), 0)
-		edged = cv2.Canny(blurred, 20, 160)          # 边缘检测
+		edged = cv2.Canny(blurred, 20, 160)	# 边缘检测
 
-		cnts,_ = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)  # 轮廓检测
+		cnts,_ = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)	# 轮廓检测
 
 		docCnt = None
 		if len(cnts) > 0:
-			cnts = sorted(cnts, key=cv2.contourArea, reverse=True) # 根据轮廓面积从大到小排序
+			cnts = sorted(cnts, key=cv2.contourArea, reverse=True)	# 根据轮廓面积从大到小排序
 			for c in cnts:
-				peri = cv2.arcLength(c, True)                         # 计算轮廓周长
-				approx = cv2.approxPolyDP(c, 0.02*peri, True)         # 轮廓多边形拟合
+				peri = cv2.arcLength(c, True)	# 计算轮廓周长
+				approx = cv2.approxPolyDP(c, 0.02*peri, True)	# 轮廓多边形拟合
 				# 轮廓为4个点表示找到纸张
 				if len(approx) == 4:
 					docCnt = approx
@@ -131,10 +143,10 @@ class TrafficPolice:
 	
 	# 比較車牌號碼 返回相似度 在0~1之間
 	def compareLPNumber(self, detectLPNumber):
-		return 1 if self.LPNumber == detectLPNumber else Levenshtein.ratio(detectLPNumber, self.LPNumber)
+		return 1 if self.targetLPNumber == detectLPNumber else Levenshtein.ratio(detectLPNumber, self.targetLPNumber)
 
-	# 辨識車牌
-	def LPProcess(self, path):
+	# 辨識車牌流程
+	def LPProcess(self, path, targetLPNumber):
 		if path.lower().endswith(('.jpg', '.jpeg', '.png')):
 			image = cv2.imread(path)
 			detectResult = self.LPModel.detectImage(image)
@@ -202,9 +214,8 @@ class TrafficPolice:
 	def saveVideo(images, path):
 		fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 		height, width = images[0].shape[:2]
-		print("height", height, "width", width)
 		out = cv2.VideoWriter(path, fourcc, 20.0, (int(width), int(height)))
-		for image in track(images, "save video"):
+		for image in track(images, "saving video"):
 			out.write(image)
 		out.release()
 
@@ -218,18 +229,16 @@ class TrafficPolice:
 	def versionUpdate():
 		pass
 
-from models.CVModel.CVModel import DetectResult
 
-if __name__ == '__main__':
-	# LPModel = YoloModel(
-	# 	namesPath = __dirname + "/static/model/lp.names",
-	# 	configPath = __dirname + "/static/model/lp.cfg",
-	# 	weightsPath = __dirname + "/static/model/lp.weights"
-	# )
-	# tp = TrafficPolice(LPModel)
-	# tp.LPNumber = "825BHW"
+def main():
+	TrafficPolice.share
+	TP = TrafficPolice()
+	buildArgparser()
+	# tp.targetLPNumber = "825BHW"
 	# imageOrVideoPath = "/content/gdrive/MyDrive/LP/detectImage/11.jpg"
 	# tp.LPProcess(imageOrVideoPath)
+
+
 	yoloModel = YoloModel(
 		namesPath = "/content/gdrive/MyDrive/yolo3/coco.names",
 		configPath = "/content/gdrive/MyDrive/yolo3/yolov3.cfg",
@@ -247,5 +256,7 @@ if __name__ == '__main__':
 	# detectResult.display()
 	# resultImage = detectResult.drawBoxes()
 	# cv2.imwrite("/content/TrafficPolice/store/output/1.jpg", resultImage)
-	
 
+
+if __name__ == '__main__':
+	main()
