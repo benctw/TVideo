@@ -17,63 +17,62 @@ __dirname = os.path.dirname(os.path.abspath(__file__))
 
 
 def buildArgparser():
-    parser = argparse.ArgumentParser()
-    #在此增加共用參數
+	parser = argparse.ArgumentParser()
+	#在此增加共用參數
 
-    subparsers = parser.add_subparsers(help='choose model')
+	subparsers = parser.add_subparsers(help='choose model')
 
-    # create the parser for the "detect" command
-    parser_detect = subparsers.add_parser('detect', help='detect')
-    #在此增加 detect 參數
-    parser_detect.add_argument("path", nargs='*', help='enter your path of video and PL')
+	# create the parser for the "detect" command
+	parser_detect = subparsers.add_parser('detect', help='detect')
+	#在此增加 detect 參數
+	parser_detect.add_argument("path", nargs='*', help='enter your path of video and PL')
 
 
-    # create the parser for the "yolo" command
-    parser_yolo = subparsers.add_parser('yolo', help='Yolo model')
-    #在此增加 yolo 參數
+	# create the parser for the "yolo" command
+	parser_yolo = subparsers.add_parser('yolo', help='Yolo model')
+	#在此增加 yolo 參數
 
-    # create the parser for the "resa" command
-    parser_resa = subparsers.add_parser('resa', help='Resa model')
-    #在此增加 resa 參數
+	# create the parser for the "resa" command
+	parser_resa = subparsers.add_parser('resa', help='Resa model')
+	#在此增加 resa 參數
 
-    # create the parser for the "smoke" command
-    parser_smoke = subparsers.add_parser('smoke', help='smoke model')
-    #在此增加 smoke 參數
+	# create the parser for the "smoke" command
+	parser_smoke = subparsers.add_parser('smoke', help='smoke model')
+	#在此增加 smoke 參數
 
-    parser_detect.set_defaults(func=detect)
-    parser_yolo.set_defaults(func=yolo)
-    parser_resa.set_defaults(func=resa)
-    parser_smoke.set_defaults(func=smoke)
-    args = parser.parse_args()
-    args.func(args)
-    return
+	parser_detect.set_defaults(func=detect)
+	parser_yolo.set_defaults(func=yolo)
+	parser_resa.set_defaults(func=resa)
+	parser_smoke.set_defaults(func=smoke)
+	args = parser.parse_args()
+	args.func(args)
+	return
 
 # 執行 detect
 def detect(args):
-    path = input()
-	while path != ".":
-		TrafficPolice.share.process(path)
-		path = input()
-	print("end")
+	TrafficPolice().process(args.detect)
 
 # 執行 yolo
 def yolo(args):
-	path = input()
-	while path != ".":
-		TrafficPolice.share.LPModel.detectImage(path)
-		path = input()
-	print("end")
+	TrafficPolice().LPModel.detectImage(args.yolo)
 
 # 執行 resa
 def resa(args):
-    pass
+	pass
 
 # 執行 smoke
 def smoke(args):
-    pass
+	pass
 
 class TrafficPolice:
-	share = TrafficPolice()
+		
+	# 單例模式
+	instance = None
+	def __new__(cls, *args, **kwargs):
+		if cls.instance is None:
+			cls.instance = cls.__init__()
+		return cls.instance
+	
 	def __init__(self):
 		###!!!
 		self.LPModel = YoloModel(
@@ -230,7 +229,6 @@ class TrafficPolice:
 
 
 def main():
-	TrafficPolice.share
 	TP = TrafficPolice()
 	buildArgparser()
 	# tp.targetLPNumber = "825BHW"

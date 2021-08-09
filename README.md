@@ -184,3 +184,28 @@ TrafficPolice
 當返回 1 時代表號碼完全一樣
 
 ### 待續 . . .
+
+
+### 參數
+
+```
+$py main.py --number NUMBER --video VIDEOPATH
+```
+內部使用
+
+```
+$py main.py -C 
+"
+       number : [
+              "1",
+              "2",
+              "3"
+       ]
+
+       video :[
+              "./1.mp4",
+              "./2.mp4",
+              "./3.mp4"
+       ]
+"   
+```
