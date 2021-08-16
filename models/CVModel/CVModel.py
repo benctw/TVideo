@@ -58,8 +58,8 @@ class DetectResult:
 		if len(color) != 3:
 			raise ValueError("color 長度不為 3")
 
-	def autoSelectColors(self):
-		self.colors = np.random.randint(0, 255, size = (len(self.labels), 3), dtype = "uint8")
+	def getAutoSelectColors(self):
+		return np.random.randint(0, 255, size = (len(self.labels), 3), dtype = "uint8")
 
 	def setColors(self, colors):
 		for color in colors:
@@ -105,7 +105,7 @@ class DetectResult:
 			print(rowFormat.format(i, self.labels[self.classIDs[i]], self.classIDs[i], self.boxes[i], self.confidences[i]))
 
 	def drawBoxes(self):
-		self.colors = self.colors if not self.colors is None else self.autoSelectColors()
+		self.colors = self.colors if not self.colors is None else self.getAutoSelectColors()
 		resultImage = self.image.copy()
 		idxs = cv2.dnn.NMSBoxes(self.boxes, self.confidences, self.confidence, self.threshold)
 		if len(idxs) > 0:

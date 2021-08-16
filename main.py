@@ -31,6 +31,9 @@ def buildArgparser():
 	# create the parser for the "yolo" command
 	parser_yolo = subparsers.add_parser('yolo', help='Yolo model')
 	#在此增加 yolo 參數
+	parser_yolo.add_argument("-i", "--image", type=str, help="image path")
+	parser_yolo.add_argument("-v", "--video", type=str, help="video path")
+	parser_yolo.add_argument("-s", "--save", type=str, help="save path")
 
 	# create the parser for the "resa" command
 	parser_resa = subparsers.add_parser('resa', help='Resa model')
@@ -50,18 +53,26 @@ def buildArgparser():
 
 # 執行 detect
 def detect(args):
+	print("detect")
 	TrafficPolice().process(args.detect)
 
 # 執行 yolo
 def yolo(args):
-	TrafficPolice().LPModel.detectImage(args.yolo)
+	detectResult = TrafficPolice().LPModel.detectImage(args.image)
+	detectResult.display()
+	if not args.save is None:
+		resultImage = detectResult.drawBoxes()
+		cv2.imwrite(args.save, resultImage)
+		print("saved")
 
 # 執行 resa
 def resa(args):
+	print("resa")
 	pass
 
 # 執行 smoke
 def smoke(args):
+	print("smoke")
 	pass
 
 class TrafficPolice:
@@ -70,15 +81,14 @@ class TrafficPolice:
 	instance = None
 	def __new__(cls, *args, **kwargs):
 		if cls.instance is None:
-			cls.instance = cls.__init__()
+			cls.instance = super().__new__(cls)
 		return cls.instance
 	
 	def __init__(self):
-		###!!!
 		self.LPModel = YoloModel(
 			namesPath   = __dirname + "/static/model/lp.names",
-			configPath  = __dirname + "/static/model/lp.cfg",
-			weightsPath = __dirname + "/static/model/lp.weights"
+			configPath  = __dirname + "/static/model/lp_yolov4.cfg",
+			weightsPath = __dirname + "/static/model/lp_yolov4_final.weights"
 		)
 		self.targetLPNumber = ""
 
@@ -231,28 +241,34 @@ class TrafficPolice:
 def main():
 	TP = TrafficPolice()
 	buildArgparser()
+
 	# tp.targetLPNumber = "825BHW"
 	# imageOrVideoPath = "/content/gdrive/MyDrive/LP/detectImage/11.jpg"
 	# tp.LPProcess(imageOrVideoPath)
 
+  #yolov3 coco model
+	# yoloModel = YoloModel(
+	# 	namesPath = "/content/gdrive/MyDrive/yolo3/coco.names",
+	# 	configPath = "/content/gdrive/MyDrive/yolo3/yolov3.cfg",
+	# 	weightsPath = "/content/gdrive/MyDrive/yolo3/yolov3.weights",
+	# 	## 至少要有的信心
+	# 	confidence=0.2,
+	# 	## 可重疊程度
+	# 	threshold=0.7
+	# )
 
-	yoloModel = YoloModel(
-		namesPath = "/content/gdrive/MyDrive/yolo3/coco.names",
-		configPath = "/content/gdrive/MyDrive/yolo3/yolov3.cfg",
-		weightsPath = "/content/gdrive/MyDrive/yolo3/yolov3.weights",
-		## 至少要有的信心
-		confidence=0.2,
-		## 可重疊程度
-		threshold=0.7
-	)
-	image = cv2.imread("/content/gdrive/MyDrive/image/1.jpg")
-	detectResult = yoloModel.detectImage(image)
-	video = cv2.VideoCapture("/content/gdrive/MyDrive/video/直行01-(825-BHW，060333-060335).mp4")
-	detectResults = yoloModel.detectVideo(video)
-	TrafficPolice.saveVideo(detectResults.drawBoxes(), "/content/gdrive/MyDrive/video/result.mp4")
+	
+	# image = cv2.imread("/content/gdrive/MyDrive/image/1.jpg")
+	# detectResult = TP.LPModel.detectImage(image)
+
+	# video = cv2.VideoCapture("/content/gdrive/MyDrive/video/直行01-(825-BHW，060333-060335).mp4")
+	# detectResults = yoloModel.detectVideo(video)
+	# TrafficPolice.saveVideo(detectResults.drawBoxes(), "/content/gdrive/MyDrive/video/result.mp4")
 	# detectResult.display()
+
 	# resultImage = detectResult.drawBoxes()
-	# cv2.imwrite("/content/TrafficPolice/store/output/1.jpg", resultImage)
+
+	# cv2.imwrite("/content/TrafficPolice/store/output/2.jpg", resultImage)
 
 
 if __name__ == '__main__':
