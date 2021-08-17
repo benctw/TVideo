@@ -11,3 +11,9 @@ class dotdict(dict):
             if isinstance(d[key], dict):
                 d[key] = dotdict.deep(d[key])
         return d
+
+from cv2 import imshow as show, waitKey, destroyAllWindows
+def imshow(img, title = ''):
+    show(title, img)
+    waitKey(0)
+    destroyAllWindows()

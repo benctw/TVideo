@@ -12,7 +12,9 @@ from rich.progress import track
 
 from models.YoloModel.YoloModel import YoloModel
 from models.Timeline.Timeline import Timeline
+from models.helper import *
 
+#!!
 __dirname = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -33,7 +35,7 @@ def buildArgparser():
 	#在此增加 yolo 參數
 	parser_yolo.add_argument("-i", "--image", type=str, help="image path")
 	parser_yolo.add_argument("-v", "--video", type=str, help="video path")
-	parser_yolo.add_argument("-s", "--save", type=str, help="save path")
+	parser_yolo.add_argument("-s", "--save", type=str, help="save path + image name")
 
 	# create the parser for the "resa" command
 	parser_resa = subparsers.add_parser('resa', help='Resa model')
@@ -55,29 +57,38 @@ def buildArgparser():
 def detect(args):
 	print("detect")
 	TrafficPolice().process(args.detect)
+	os._exit(0)
 
 # 執行 yolo
 def yolo(args):
-	detectResult = TrafficPolice().LPModel.detectImage(args.image)
-	detectResult.display()
-	if not args.save is None:
-		resultImage = detectResult.drawBoxes()
-		cv2.imwrite(args.save, resultImage)
-		print("saved")
+	TP = TrafficPolice()
+
+	if not args.image is None:
+		detectResult = TP.LPModel.detectImage(args.image)
+		detectResult.display()
+		if not args.save is None:
+			resultImage = detectResult.drawBoxes()
+			cv2.imwrite(args.save, resultImage)
+			print("saved")
+
+	# video 一定要有--save
+	if not args.video is None:
+		detectResults = TP.LPModel.detectVideo(args.video)
+		TP.saveVideo(detectResults.drawBoxes(), args.save)
+	os._exit(0)
 
 # 執行 resa
 def resa(args):
 	print("resa")
-	pass
+	os._exit(0)
 
 # 執行 smoke
 def smoke(args):
 	print("smoke")
-	pass
+	os._exit(0)
 
+# 單例模式
 class TrafficPolice:
-		
-	# 單例模式
 	instance = None
 	def __new__(cls, *args, **kwargs):
 		if cls.instance is None:
@@ -85,10 +96,14 @@ class TrafficPolice:
 		return cls.instance
 	
 	def __init__(self):
+		#!!
+		__dirname = os.path.dirname(os.path.abspath(__file__))
+
 		self.LPModel = YoloModel(
 			namesPath   = __dirname + "/static/model/lp.names",
 			configPath  = __dirname + "/static/model/lp_yolov4.cfg",
-			weightsPath = __dirname + "/static/model/lp_yolov4_final.weights"
+			weightsPath = __dirname + "/static/model/lp_yolov4_final.weights",
+			# weightsPath = "D:/chiziSave/TrafficPoliceYoloModel/model/lp_yolov4_final.weights"
 		)
 		self.targetLPNumber = ""
 
@@ -240,7 +255,8 @@ class TrafficPolice:
 
 def main():
 	TP = TrafficPolice()
-	buildArgparser()
+	if len(sys.argv) > 1:
+	  buildArgparser()
 
 	# tp.targetLPNumber = "825BHW"
 	# imageOrVideoPath = "/content/gdrive/MyDrive/LP/detectImage/11.jpg"
@@ -258,13 +274,32 @@ def main():
 	# )
 
 	
-	# image = cv2.imread("/content/gdrive/MyDrive/image/1.jpg")
+	# image = cv2.imread("D:/chiziSave/image/U20151119083338.jpg")
+	# imshow(image)
 	# detectResult = TP.LPModel.detectImage(image)
-
-	# video = cv2.VideoCapture("/content/gdrive/MyDrive/video/直行01-(825-BHW，060333-060335).mp4")
-	# detectResults = yoloModel.detectVideo(video)
-	# TrafficPolice.saveVideo(detectResults.drawBoxes(), "/content/gdrive/MyDrive/video/result.mp4")
 	# detectResult.display()
+	# croppedImages = detectResult.cropAll(1)
+	# print(croppedImages)
+	# for croppedImage in croppedImages[1]:
+	# 	imshow(croppedImage)
+	# num = ''.join(TrafficPolice.getLPNumber(detectResult.crop(0)))
+	# print('num:', num)
+	# detectImage = detectResult.drawBoxes(num)
+	# imshow(detectImage)
+
+	detectResults = TP.LPModel.detectVideo("videoplayback.mp4")
+	# def customText(detectResult):
+	# 	detectResult
+	
+	def callbackDetectResultReturnCustomTexts(detectResult):
+		customTexts = []
+		croppedImages = detectResult.cropAll(1)
+		for croppedImage in croppedImages:
+			customTexts.append(''.join(TrafficPolice.getLPNumber(croppedImage)))
+		return customTexts
+
+	detectResults.drawBoxes(callbackDetectResultReturnCustomTexts)
+	TP.saveVideo(detectResults.drawBoxes(), "videoplayback_result_車牌分析.mp4")
 
 	# resultImage = detectResult.drawBoxes()
 
