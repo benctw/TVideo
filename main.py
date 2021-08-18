@@ -65,9 +65,9 @@ def yolo(args):
 
 	if not args.image is None:
 		detectResult = TP.LPModel.detectImage(args.image)
-		detectResult.display()
+		detectResult.table()
 		if not args.save is None:
-			resultImage = detectResult.drawBoxes()
+			resultImage = detectResult.drawBoxes(detectResult.NMSIndexs)
 			cv2.imwrite(args.save, resultImage)
 			print("saved")
 
@@ -102,8 +102,8 @@ class TrafficPolice:
 		self.LPModel = YoloModel(
 			namesPath   = __dirname + "/static/model/lp.names",
 			configPath  = __dirname + "/static/model/lp_yolov4.cfg",
-			weightsPath = __dirname + "/static/model/lp_yolov4_final.weights",
-			# weightsPath = "D:/chiziSave/TrafficPoliceYoloModel/model/lp_yolov4_final.weights"
+			# weightsPath = __dirname + "/static/model/lp_yolov4_final.weights"
+			weightsPath = "D:/chiziSave/TrafficPoliceYoloModel/model/lp_yolov4_final.weights"
 		)
 		self.targetLPNumber = ""
 
@@ -193,7 +193,7 @@ class TrafficPolice:
 			# for i in track(range(0, len(self.LPModel.images)), "[INFO] 寫入影片"):
 			# 	out.write(self.LPModel.drawBoxes(self.LPModel.images[i], detectResults[i]))
 			# 	print("[INFO] 處理中 {}".format(i))
-			# 	print(detectResults[i].display())
+			# 	print(detectResults[i].table())
 			# out.release()
 			# print("[INFO] 完成")
 
@@ -254,10 +254,8 @@ class TrafficPolice:
 
 
 def main():
-	TP = TrafficPolice()
 	if len(sys.argv) > 1:
-	  buildArgparser()
-
+		buildArgparser()
 	# tp.targetLPNumber = "825BHW"
 	# imageOrVideoPath = "/content/gdrive/MyDrive/LP/detectImage/11.jpg"
 	# tp.LPProcess(imageOrVideoPath)
@@ -273,33 +271,33 @@ def main():
 	# 	threshold=0.7
 	# )
 
-	
-	# image = cv2.imread("D:/chiziSave/image/U20151119083338.jpg")
-	# imshow(image)
-	# detectResult = TP.LPModel.detectImage(image)
-	# detectResult.display()
-	# croppedImages = detectResult.cropAll(1)
-	# print(croppedImages)
-	# for croppedImage in croppedImages[1]:
-	# 	imshow(croppedImage)
-	# num = ''.join(TrafficPolice.getLPNumber(detectResult.crop(0)))
-	# print('num:', num)
-	# detectImage = detectResult.drawBoxes(num)
-	# imshow(detectImage)
+	TP = TrafficPolice()
+	image = cv2.imread("D:/chiziSave/image/U20151119083338.jpg")
+	imshow(image)
+	detectResult = TP.LPModel.detectImage(image)
+	detectResult.table()
+	croppedImages = detectResult.cropAll2('license plate', indexs=detectResult.NMSIndexs)
+	print(croppedImages)
 
-	detectResults = TP.LPModel.detectVideo("videoplayback.mp4")
+	def callbackReturnLPNumber(classID, box, confidence, i):
+		return ''.join(TrafficPolice.getLPNumber(croppedImages[i]))
+
+	detectImage = detectResult.drawBoxes(detectResult.NMSIndexs, callbackReturnLPNumber)
+	imshow(detectImage)
+
+	# detectResults = TP.LPModel.detectVideo("videoplayback.mp4")
 	# def customText(detectResult):
 	# 	detectResult
 	
-	def callbackDetectResultReturnCustomTexts(detectResult):
-		customTexts = []
-		croppedImages = detectResult.cropAll(1)
-		for croppedImage in croppedImages:
-			customTexts.append(''.join(TrafficPolice.getLPNumber(croppedImage)))
-		return customTexts
+	# def callbackDetectResultReturnCustomTexts(detectResult):
+	# 	customTexts = []
+	# 	croppedImages = detectResult.cropAll(1)
+	# 	for croppedImage in croppedImages:
+	# 		customTexts.append(''.join(TrafficPolice.getLPNumber(croppedImage)))
+	# 	return customTexts
 
-	detectResults.drawBoxes(callbackDetectResultReturnCustomTexts)
-	TP.saveVideo(detectResults.drawBoxes(), "videoplayback_result_車牌分析.mp4")
+	# detectResults.drawBoxes(callbackDetectResultReturnCustomTexts)
+	# TP.saveVideo(detectResults.drawBoxes(), "videoplayback_result_車牌分析.mp4")
 
 	# resultImage = detectResult.drawBoxes()
 

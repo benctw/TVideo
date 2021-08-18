@@ -93,67 +93,81 @@ class DetectResult:
 	
 	def hasResult(self):
 		return len(self.classIDs) > 0
-	
+
+	def getNMSDetectResult(self):
+		NMSDetectResult = DetectResult(self.image, self.labels, self.threshold, self.confidence, self.colors)
+		for i in self.NMSIndexs:
+			NMSDetectResult.add(self.classIDs[i], self.boxes[i], self.confidences[i])
+		return NMSDetectResult
+
+	def calcNMS(self):
+		idxs = cv2.dnn.NMSBoxes(self.boxes, self.confidences, self.confidence, self.threshold)
+		self.NMSIndexs = idxs.flatten()
+
 	def crop(self, boxIndex):
 		croppedImage = self.image.copy()
 		p1x, p1y, p2x, p2y = self.boxes[boxIndex]
 		return croppedImage[p1y:p2y, p1x:p2x]
 
-	def cropAll(self, *classIDs):
-		print("classIDs:", classIDs)
-		croppedImages = {}
-		# croppedImages = {classID: [] for classID in classIDs}
-		for classID in classIDs:
-			if type(classID) != int:
-				raise ArgumentTypeError('每個參數都必須是 int 類型')
-
-		for classID in classIDs:
-			croppedImages[classID] = []
+	def cropAll(self, classID, indexs = None):
+		croppedImages = []
+		# 參數接受 label: str 和 classID: int 類型
+		if type(classID) == str:
+			classID = self.labels.index(classID)
+		elif type(classID) != int:
+			raise ValueError('{} 有誤，每個參數都必須是 int 或 str 類型'.format(classID))
 
 		for i in range(0, self.count):
-			if self.classIDs[i] in classIDs:
-				croppedImages[self.classIDs[i]].append(self.crop(i))
+			croppedImages.append(self.crop(i) if self.classIDs[i] == classID and i in indexs else None)
 
 		return croppedImages
-		
-	
-	def display(self):
+
+	def table(self):
 		header = ['Index', 'Label', 'ClassID', 'Box', 'Confidence']
 		rowFormat = '{!s:15} {!s:20} {!s:10} {!s:30} {!s:20}'
 		print(rowFormat.format(*header))
 		for i in range(0, self.count):
 			print(rowFormat.format(i, self.labels[self.classIDs[i]], self.classIDs[i], self.boxes[i], self.confidences[i]))
 
-	def drawBoxes(self, customTexts):
+	def msg(self, classID, _, confidence):
+		percentage = round(confidence * 100)
+		return "{}: ({}%) {}".format(self.labels[classID], percentage)
+
+	def drawBoxes(self, indexs, callbackReturnText = None):
 		self.colors = self.colors if not self.colors is None else self.getAutoSelectColors()
 		resultImage = self.image.copy()
-		idxs = cv2.dnn.NMSBoxes(self.boxes, self.confidences, self.confidence, self.threshold)
-		if len(idxs) > 0:
-			for i in idxs.flatten():
-				p1x, p1y, p2x, p2y = self.boxes[i]
-				color = [int(c) for c in self.colors[self.classIDs[i]]]
-				# 框
-				cv2.rectangle(resultImage, (p1x, p1y), (p2x, p2y), color, 2)
-				# 計算百分比
-				percentage = round(self.confidences[i] * 100)
-				# 附帶的字
-				text = "{}: ({:.4f}%) {}".format(self.labels[self.classIDs[i]], percentage, customTexts[i])
-				# 字型設定
-				font = cv2.FONT_HERSHEY_COMPLEX
-				fontScale = 0.5
-				fontThickness = 1
-				# 顏色反相
-				textColor = [255 - c for c in color]
-				# 獲取字型尺寸
-				(textW, textH), _ = cv2.getTextSize(text, font, fontScale, fontThickness)
-				# 添加字的背景
-				cv2.rectangle(resultImage, (p1x, p1y - textH), (p1x + textW, p1y), color, -1)
-				# 添加字
-				cv2.putText(resultImage, text, (p1x, p1y), font, fontScale, textColor, fontThickness, cv2.LINE_AA)
+		for i in indexs:
+			p1x, p1y, p2x, p2y = self.boxes[i]
+			color = [int(c) for c in self.colors[self.classIDs[i]]]
+			# 框
+			cv2.rectangle(resultImage, (p1x, p1y), (p2x, p2y), color, 2)
+			# 如果沒有信息退出
+			if callbackReturnText == None:
+				return resultImage
+			# 附帶的字
+			text = callbackReturnText(self.classIDs[i], self.boxes[i], self.confidences[i], i)
+			# 字型設定
+			font = cv2.FONT_HERSHEY_COMPLEX
+			fontScale = 0.5
+			fontThickness = 1
+			# 顏色反相
+			# textColor = [255 - c for c in color]
+			# 對比色
+			textColor = [color[1], color[2], color[0]]
+			# 獲取字型尺寸
+			(textW, textH), _ = cv2.getTextSize(text, font, fontScale, fontThickness)
+			# 添加字的背景
+			cv2.rectangle(resultImage, (p1x, p1y - textH), (p1x + textW, p1y), color, -1)
+			# 添加字
+			cv2.putText(resultImage, text, (p1x, p1y), font, fontScale, textColor, fontThickness, cv2.LINE_AA)
 		return resultImage
 
 
 class DetectResults:
+	#! 改名
+	AllIndex = -1
+	NMSIndexs = 0
+
 	def __init__(self, labels = [], colors = None):
 		self.detectResults = []
 		self.labels = labels
@@ -172,11 +186,17 @@ class DetectResults:
 			detectResult.setColors(colors)
 		self.colors = colors
 		return self
-	#!! callbackDetectResultReturnCustomTexts 返回一個 [str]
-	def drawBoxes(self, callbackDetectResultReturnCustomTexts):
+	#!! callbackReturnCustomText 返回一個 str
+	def drawBoxes(self, indexs, callbackReturnTexts = None):
 		results = []
-		for detectResult in self.detectResults:
-			customTexts = callbackDetectResultReturnCustomTexts(detectResult)
-			results.append(detectResult.drawBoxes(customTexts))
-		return results
+		# 對所有的結果繪畫框
+		if indexs == self.AllIndex:
+			for i, detectResult in enumerate(self.detectResults):
+    				
+				results.append(detectResult.drawBoxes([j for j in range(0, detectResult.count())], lambda *args: callbackReturnTexts(detectResult, i, *args)))
 		
+		elif indexs == self.NMSIndexs:
+			for i, detectResult in enumerate(self.detectResults):
+				results.append(detectResult.drawBoxes(detectResult.NMSIndexs, lambda *args: callbackReturnTexts(detectResult, i, *args)))
+		
+		return results

@@ -50,4 +50,5 @@ class YoloModel(CVModel):
 				if confidence > self.minConfidence:
 					box = detection[0 : 4] * np.array([W, H, W, H])
 					result.add(classID, self.yoloFormatToTwoPoint(*box.astype(int)), float(confidence))
+		result.calcNMS()
 		return result
