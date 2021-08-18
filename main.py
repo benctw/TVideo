@@ -29,7 +29,6 @@ def buildArgparser():
 	#在此增加 detect 參數
 	parser_detect.add_argument("path", nargs='*', help='enter your path of video and PL')
 
-
 	# create the parser for the "yolo" command
 	parser_yolo = subparsers.add_parser('yolo', help='Yolo model')
 	#在此增加 yolo 參數
@@ -56,7 +55,7 @@ def buildArgparser():
 # 執行 detect
 def detect(args):
 	print("detect")
-	TrafficPolice().process(args.detect)
+	TrafficPolice().process(args.path)
 	os._exit(0)
 
 # 執行 yolo
@@ -112,12 +111,6 @@ class TrafficPolice:
 
 	#//////// 共同 ////////#
 
-	def loadImage(self):
-		pass
-
-	def loadVideo(self):
-		pass
-
 	# 更新裁剪的時間點
 	def updataMarkPoint(self, start, end):
 		pass
@@ -126,9 +119,10 @@ class TrafficPolice:
 
 	# 獲得車牌號碼
 	@staticmethod
-	def getLPNumber(LPImage):
+	def getLPNumber(image):
 		reader = easyocr.Reader(['en']) # need to run only once to load model into memory
-		return reader.readtext(LPImage, detail = 0)
+		text = ''.join(reader.readtext(image, detail = 0))
+		return text.strip(' ').upper()
 	
 	# 矯正
 	@staticmethod
@@ -165,8 +159,8 @@ class TrafficPolice:
 
 	
 	# 比較車牌號碼 返回相似度 在0~1之間
-	def compareLPNumber(self, detectLPNumber):
-		return 1 if self.targetLPNumber == detectLPNumber else Levenshtein.ratio(detectLPNumber, self.targetLPNumber)
+	def compareLPNumber(self, targetLPNumber, detectLPNumber):
+		return 1 if targetLPNumber == detectLPNumber else Levenshtein.ratio(detectLPNumber, targetLPNumber)
 
 	# 辨識車牌流程
 	def LPProcess(self, path, targetLPNumber):
@@ -178,12 +172,11 @@ class TrafficPolice:
 				# correctedLPImage = self.correct(LPImage)
 				LPNumber = self.getLPNumber(LPImage)
 				print('[INFO] ', LPNumber)
-				similarity = self.compareLPNumber(''.join(LPNumber))
+				similarity = self.compareLPNumber(targetLPNumber, LPNumber)
 				if similarity == 1:
 					print('[INFO] 找到對應車牌號碼: {}'.format(LPNumber))
 		elif path.lower().endswith(('.mp4', '.avi')):
-			videoCapture = cv2.VideoCapture(path)
-			detectResults = self.LPModel.detectVideo(videoCapture)
+			detectResults = self.LPModel.detectVideo(path)
 			self.saveVideo(detectResults.drawBoxes(), "/content/gdrive/MyDrive/video/result.mp4")
 
 			###!!!
@@ -276,11 +269,11 @@ def main():
 	imshow(image)
 	detectResult = TP.LPModel.detectImage(image)
 	detectResult.table()
-	croppedImages = detectResult.cropAll2('license plate', indexs=detectResult.NMSIndexs)
+	croppedImages = detectResult.cropAll('license plate', indexs=detectResult.NMSIndexs)
 	print(croppedImages)
 
 	def callbackReturnLPNumber(classID, box, confidence, i):
-		return ''.join(TrafficPolice.getLPNumber(croppedImages[i]))
+		return TrafficPolice.getLPNumber(croppedImages[i])
 
 	detectImage = detectResult.drawBoxes(detectResult.NMSIndexs, callbackReturnLPNumber)
 	imshow(detectImage)
@@ -293,7 +286,7 @@ def main():
 	# 	customTexts = []
 	# 	croppedImages = detectResult.cropAll(1)
 	# 	for croppedImage in croppedImages:
-	# 		customTexts.append(''.join(TrafficPolice.getLPNumber(croppedImage)))
+	# 		customTexts.append(TrafficPolice.getLPNumber(croppedImage))
 	# 	return customTexts
 
 	# detectResults.drawBoxes(callbackDetectResultReturnCustomTexts)

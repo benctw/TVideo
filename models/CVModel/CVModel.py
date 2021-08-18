@@ -103,6 +103,10 @@ class DetectResult:
 	def calcNMS(self):
 		idxs = cv2.dnn.NMSBoxes(self.boxes, self.confidences, self.confidence, self.threshold)
 		self.NMSIndexs = idxs.flatten()
+	
+	@property
+	def AllIndex(self):
+		return [i for i in range(0, self.count())]
 
 	def crop(self, boxIndex):
 		croppedImage = self.image.copy()
@@ -116,6 +120,9 @@ class DetectResult:
 			classID = self.labels.index(classID)
 		elif type(classID) != int:
 			raise ValueError('{} 有誤，每個參數都必須是 int 或 str 類型'.format(classID))
+
+		if indexs == None:
+			indexs = self.AllIndex
 
 		for i in range(0, self.count):
 			croppedImages.append(self.crop(i) if self.classIDs[i] == classID and i in indexs else None)
@@ -141,7 +148,7 @@ class DetectResult:
 			color = [int(c) for c in self.colors[self.classIDs[i]]]
 			# 框
 			cv2.rectangle(resultImage, (p1x, p1y), (p2x, p2y), color, 2)
-			# 如果沒有信息退出
+			# 如果沒有信息不繪畫字
 			if callbackReturnText == None:
 				return resultImage
 			# 附帶的字
