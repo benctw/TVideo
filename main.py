@@ -129,7 +129,7 @@ class TrafficPolice:
 		# oimg調整大小之後，不會再修改oimg
 		# osize = oimg.shape
 		# img作為處理過程中被處理的對象
-		img = oimg.copy
+		img = oimg.copy()
 		img = cv2.resize(img, (256, 256), interpolation=cv2.INTER_CUBIC)
 
 		img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -163,6 +163,7 @@ class TrafficPolice:
 				break
 			if len(approx) < 4:
 				print(f"e = {e} 擬合不到 4 個點")
+				# 沒矯正結果
 				return None
 		# 重新排序4個角點的順序
 		# approxPolyDP 返回角點的順序每次都不一樣
@@ -189,11 +190,12 @@ class TrafficPolice:
 		dst = np.float32([[0, 0], [0, 150], [356, 150], [356, 0]])
 		mat = cv2.getPerspectiveTransform(newApprox, dst)
 		result = cv2.warpPerspective(oimg.copy(), mat, (356, 150))
-		return result
+		return [result, p1, p2, p3, p4]
 
-	
 	# 比較車牌號碼 返回相似度 在0~1之間
-	def compareLPNumber(self, targetLPNumber, detectLPNumber):
+	#! 提升速度，可能會直接對比
+	@staticmethod
+	def compareLPNumber(targetLPNumber, detectLPNumber):
 		return 1 if targetLPNumber == detectLPNumber else Levenshtein.ratio(detectLPNumber, targetLPNumber)
 
 	# 辨識車牌流程
