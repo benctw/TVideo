@@ -1,8 +1,6 @@
 import math
 import numpy as np
 import cv2
-# 以下這一句為了解決vscode報錯問題，運行時沒必要
-# from cv2 import cv2
 import os
 import sys
 import argparse
@@ -126,36 +124,72 @@ class TrafficPolice:
 	
 	# 矯正
 	@staticmethod
-	def correct(image):
-		gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-		blurred = cv2.GaussianBlur(gray, (11, 11), 0)
-		edged = cv2.Canny(blurred, 20, 160)	# 边缘检测
+	def correct(oimg):
+		# 調整統一大小
+		# oimg調整大小之後，不會再修改oimg
+		# osize = oimg.shape
+		# img作為處理過程中被處理的對象
+		img = oimg.copy
+		img = cv2.resize(img, (256, 256), interpolation=cv2.INTER_CUBIC)
 
-		cnts,_ = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)	# 轮廓检测
+		img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-		docCnt = None
-		if len(cnts) > 0:
-			cnts = sorted(cnts, key=cv2.contourArea, reverse=True)	# 根据轮廓面积从大到小排序
-			for c in cnts:
-				peri = cv2.arcLength(c, True)	# 计算轮廓周长
-				approx = cv2.approxPolyDP(c, 0.02*peri, True)	# 轮廓多边形拟合
-				# 轮廓为4个点表示找到纸张
-				if len(approx) == 4:
-					docCnt = approx
-					break
-		for peak in docCnt:
-			peak = peak[0]
-			cv2.circle(image, tuple(peak), 10, (255, 0, 0))
-			
-		H, W = image.shape[:2]
+		img = cv2.medianBlur(img, 3)
 
-		point_set_0 = np.float32([docCnt[1,0],docCnt[2,0],docCnt[3,0],docCnt[0,0]])
-		point_set_1 = np.float32([[0, 0],[0, 140],[440, 140],[440, 0]])
+		kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (6, 6))
+		close = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel, iterations=1)
+		normed = cv2.normalize(close, None, 0, 255, cv2.NORM_MINMAX)
+		img = normed
 
-		# 变换矩阵
-		mat = cv2.getPerspectiveTransform(point_set_0, point_set_1)
-		# 投影变换
-		lic = cv2.warpPerspective(image, mat, (440, 140))
+		ret, img = cv2.threshold(img, 0, 255, cv2.THRESH_OTSU)
+
+		cnts, hierarchy = cv2.findContours(img ,cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+		cntsArea = [cv2.contourArea(c) for c in cnts]
+		maxIndex = np.argmax(cntsArea)
+		maxCnt = cnts[maxIndex]
+		# 用凸包把內部細節去除
+		maxCnt = cv2.convexHull(maxCnt, True, False)
+		# 找出4個點來趨近它
+		l = cv2.arcLength(maxCnt, True)
+		# e從0開始增加0.01，至到能用4個點逼近為止
+		e = 0
+		approx = cv2.approxPolyDP(maxCnt, e * l, True)
+		while True:
+			e += 0.001
+			approx = cv2.approxPolyDP(maxCnt, e * l, True)
+			if len(approx) == 4:
+				print(f"e = {e}")
+				break
+			if len(approx) < 4:
+				print(f"e = {e} 擬合不到 4 個點")
+				return None
+		# 重新排序4個角點的順序
+		# approxPolyDP 返回角點的順序每次都不一樣
+		# 所以排序成從左上角開始逆時針排序
+		p1, p2, p3, p4 = [tuple(p.flatten()) for p in approx]
+		# 質心點
+		cx = int((p1[0] + p2[0] + p3[0] + p4[0]) / 4)
+		# 沒用到 cy
+		# cy = int((p1[1] + p2[1] + p3[1] + p4[1]) / 4)
+		# 左邊的點 和 右邊的點
+		lp = []
+		rp = []
+		# 分割左右點
+		for p in [p1, p2, p3, p4]:
+			lp.append(p) if p[0] < cx else rp.append(p)
+		lp = sorted(lp, key = lambda s: s[1])
+		rp = sorted(rp, key = lambda s: s[1], reverse=True)
+		# 左上角開始逆時針排序 4 個角點
+		p1, p2, p3, p4 = lp + rp
+
+		newApprox = np.float32([p1, p2, p3, p4])
+		# 實物的長寬比
+		#!
+		dst = np.float32([[0, 0], [0, 150], [356, 150], [356, 0]])
+		mat = cv2.getPerspectiveTransform(newApprox, dst)
+		result = cv2.warpPerspective(oimg.copy(), mat, (356, 150))
+		return result
 
 	
 	# 比較車牌號碼 返回相似度 在0~1之間
@@ -265,22 +299,20 @@ def main():
 	# )
 
 	TP = TrafficPolice()
-	image = cv2.imread("D:/chiziSave/image/U20151119083338.jpg")
-	imshow(image)
-	detectResult = TP.LPModel.detectImage(image)
-	detectResult.table()
-	croppedImages = detectResult.cropAll('license plate', indexs=detectResult.NMSIndexs)
-	print(croppedImages)
+	# image = cv2.imread("D:/chiziSave/image/U20151119083338.jpg")
+	# imshow(image)
+	# detectResult = TP.LPModel.detectImage(image)
+	# detectResult.table()
+	# croppedImages = detectResult.cropAll('license plate', indexs=detectResult.NMSIndexs)
+	# print(croppedImages)
 
-	def callbackReturnLPNumber(classID, box, confidence, i):
-		return TrafficPolice.getLPNumber(croppedImages[i])
+	# def callbackReturnLPNumber(classID, box, confidence, i):
+	# 	return TrafficPolice.getLPNumber(croppedImages[i])
 
-	detectImage = detectResult.drawBoxes(detectResult.NMSIndexs, callbackReturnLPNumber)
-	imshow(detectImage)
+	# detectImage = detectResult.drawBoxes(detectResult.NMSIndexs, callbackReturnLPNumber)
+	# imshow(detectImage)
 
-	# detectResults = TP.LPModel.detectVideo("videoplayback.mp4")
-	# def customText(detectResult):
-	# 	detectResult
+	detectResults = TP.LPModel.detectVideo("D:/下載/右轉01(YDE-999，185410-185413).mp4")
 	
 	# def callbackDetectResultReturnCustomTexts(detectResult):
 	# 	customTexts = []
@@ -289,9 +321,13 @@ def main():
 	# 		customTexts.append(TrafficPolice.getLPNumber(croppedImage))
 	# 	return customTexts
 
-	# detectResults.drawBoxes(callbackDetectResultReturnCustomTexts)
-	# TP.saveVideo(detectResults.drawBoxes(), "videoplayback_result_車牌分析.mp4")
+	def callbackReturnTexts(detectResult, i, classID, box, confidence, j):
+		croppedImages = detectResult.cropAll('license plate', indexs=detectResult.NMSIndexs)
+		return TrafficPolice.getLPNumber(croppedImages[j])
 
+	detectResults.drawBoxes(detectResults.NMSIndexs, callbackReturnTexts)
+	TP.saveVideo(detectResults.drawBoxes(), "D:/下載/右轉01(YDE-999，185410-185413)_result_車牌分析2.mp4")
+	
 	# resultImage = detectResult.drawBoxes()
 
 	# cv2.imwrite("/content/TrafficPolice/store/output/2.jpg", resultImage)

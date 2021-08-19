@@ -35,7 +35,33 @@ class CVModel(ABC):
 		for image in track(self.images[::interval], "detecting"):
 			results.add(self.detectImage(image))
 		return results
-
+	
+	# 計算任意點數的質心點位置
+	# points: [point]
+	@staticmethod
+	def getCenterPosition(points):
+		l = len(points)
+		cp = []
+		for i in range(0, len(points[0])):
+			sum = 0
+			for point in points:
+				sum += point[i]
+			cp.append(sum)
+		cp = [c / l for c in cp]
+		return cp
+	
+	# 計算兩個矩形的IoU
+	# rect: [p1, p2]
+	# p1: [x, y]
+	def IoU(rect1, rect2):
+		iouP1 = [max(rect1[0][0], rect2[0][0]), max(rect1[0][1], rect2[0][1])]
+		iouP2 = [min(rect1[1][0], rect2[1][0]), min(rect1[1][1], rect2[1][1])]
+		# 交集面積
+		iouArea = (iouP2[0] - iouP1[0]) * (iouP2[1] - iouP1[1])
+		# 聯集面積 = rect1面積 + rect2面積 - iou面積
+		allArea = (rect1[1][0] - rect1[0][0]) * (rect1[1][1] - rect1[0][1]) + (rect2[1][0]-rect2[0][0]) * (rect2[1][1]-rect2[0][1]) - iouArea
+		# IoU =  面積交集 / 面積聯集
+		return iouArea / allArea
 
 ### 改成只針對yolo的結果
 class DetectResult:
@@ -103,7 +129,7 @@ class DetectResult:
 	def calcNMS(self):
 		idxs = cv2.dnn.NMSBoxes(self.boxes, self.confidences, self.confidence, self.threshold)
 		self.NMSIndexs = idxs.flatten()
-	
+
 	@property
 	def AllIndex(self):
 		return [i for i in range(0, self.count())]
@@ -136,9 +162,9 @@ class DetectResult:
 		for i in range(0, self.count):
 			print(rowFormat.format(i, self.labels[self.classIDs[i]], self.classIDs[i], self.boxes[i], self.confidences[i]))
 
-	def msg(self, classID, _, confidence):
+	def msg(self, classID, _, confidence, i):
 		percentage = round(confidence * 100)
-		return "{}: ({}%) {}".format(self.labels[classID], percentage)
+		return "{}: ({}%)".format(self.labels[classID], percentage)
 
 	def drawBoxes(self, indexs, callbackReturnText = None):
 		self.colors = self.colors if not self.colors is None else self.getAutoSelectColors()
@@ -199,8 +225,7 @@ class DetectResults:
 		# 對所有的結果繪畫框
 		if indexs == self.AllIndex:
 			for i, detectResult in enumerate(self.detectResults):
-    				
-				results.append(detectResult.drawBoxes([j for j in range(0, detectResult.count())], lambda *args: callbackReturnTexts(detectResult, i, *args)))
+				results.append(detectResult.drawBoxes([int(j) for j in range(0, detectResult.count())], lambda *args: callbackReturnTexts(detectResult, i, *args)))
 		
 		elif indexs == self.NMSIndexs:
 			for i, detectResult in enumerate(self.detectResults):
