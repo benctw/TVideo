@@ -53,6 +53,7 @@ class CVModel(ABC):
 	# 計算兩個矩形的IoU
 	# rect: [p1, p2]
 	# p1: [x, y]
+	@staticmethod
 	def IoU(rect1, rect2):
 		iouP1 = [max(rect1[0][0], rect2[0][0]), max(rect1[0][1], rect2[0][1])]
 		iouP2 = [min(rect1[1][0], rect2[1][0]), min(rect1[1][1], rect2[1][1])]
@@ -132,7 +133,7 @@ class DetectResult:
 
 	@property
 	def AllIndex(self):
-		return [i for i in range(0, self.count())]
+		return [i for i in range(0, self.count)]
 
 	def crop(self, boxIndex):
 		croppedImage = self.image.copy()
@@ -225,7 +226,7 @@ class DetectResults:
 		# 對所有的結果繪畫框
 		if indexs == self.AllIndex:
 			for i, detectResult in enumerate(self.detectResults):
-				results.append(detectResult.drawBoxes([int(j) for j in range(0, detectResult.count())], lambda *args: callbackReturnTexts(detectResult, i, *args)))
+				results.append(detectResult.drawBoxes([int(j) for j in range(0, detectResult.count)], lambda *args: callbackReturnTexts(detectResult, i, *args)))
 		
 		elif indexs == self.NMSIndexs:
 			for i, detectResult in enumerate(self.detectResults):

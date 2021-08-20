@@ -1,35 +1,36 @@
 from typing import List, Set, Tuple, Dict, Any, Union
-from models.CVModel.CVModel import CVModel
+from enum import IntFlag
 import easyocr
 import numpy as np
 import cv2
+
+from models.CVModel.CVModel import CVModel
+from models.TPFrames.TFType import Box, Point2D
 
 
 # 一載具的數據
 class VehicleData:
 	def __init__(
 		self, 
-		# 框
-		box: List = [],
-		# 方向
-		direction: List = [],
-		# 下一時刻可能的位置
-		possiblePositionAtTheNextMoment: List = [],
-		# 對應的車牌
-		#!
-		
+		image: np.ndarray, 
+		box  : List,
+		confidence: float
 	):
+		self.image = image
 		self.box = box
-		# 計算出來的
-		self.direction = direction
-		self.possiblePositionAtTheNextMoment = possiblePositionAtTheNextMoment
-
+		self.confidence = confidence
 		self.calc()
 
 	# 生成之後計算的數據
 	def calc(self):
-		# 載具質心點位置: list
-		self.centerPosition = CVModel.getCenterPosition(self.box)
+		# 載具質心點位置
+		self.centerPosition: List = CVModel.getCenterPosition(self.box)
+		# 方向
+		# self.direction = direction
+		# 下一時刻可能的位置
+		# self.possiblePositionAtTheNextMoment: List = possiblePositionAtTheNextMoment
+		# 對應的車牌
+		#!
 
 
 # 一車牌的數據
@@ -40,31 +41,29 @@ class LicensePlateData:
 
 	def __init__(
 		self, 
-		# 車牌圖像
 		image: np.ndarray, 
-		# 框
-		box: List = []
+		box  : List,
+		confidence: float
 	):
 		self.image = image
 		self.box = box
-
+		self.confidence = confidence
 		self.calc()
 	
 	# 生成之後計算的數據
 	def calc(self):
-		# 車牌質心點位置 : list
-		self.centerPosition = CVModel.getCenterPosition(self.box)
+		# 車牌質心點位置
+		self.centerPosition: List = CVModel.getCenterPosition(self.box)
 		# 車牌的四個角點
-		self.cornerPoints = self.getCornerPoints(self.image)
-		#! 看看要不要把correct搬到這
-		self.correctImage = self.correct(self.image, self.cornerPoints, 150 * self.ratioOfLicensePlate, 150)
-		# 車牌號碼: str
-		self.number = self.getNumber(self.image)
+		self.cornerPoints  : List = self.getCornerPoints(self.image)
+		# 矯正的圖像
+		self.correctImage  : np.ndarray = self.correct(self.image, self.cornerPoints, int(150 * self.ratioOfLicensePlate), 150)
+		# 車牌號碼
+		self.number        : str = self.getNumber(self.image)
 	
 	@staticmethod
-	def getCornerPoints(image) -> List:
+	def getCornerPoints(image: np.ndarray) -> List:
 		img = image.copy()
-		# img = cv2.resize(img, (256, 256), interpolation=cv2.INTER_CUBIC)
 		img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 		img = cv2.medianBlur(img, 3)
 		kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (6, 6))
@@ -92,7 +91,7 @@ class LicensePlateData:
 			if len(approx) < 4:
 				print(f"e = {e} 擬合不到 4 個點")
 				# 沒矯正結果
-				return None
+				return []
 		# 重新排序4個角點的順序
 		# approxPolyDP 返回角點的順序每次都不一樣
 		# 所以排序成從左上角開始逆時針排序
@@ -112,118 +111,126 @@ class LicensePlateData:
 		return lp + rp
 	
 	@staticmethod
-	def correct(image, cornerPoints: List,  w: int, h: int) -> np.ndarray:
+	def correct(image: np.ndarray, cornerPoints,  w: int, h: int) -> np.ndarray:
 		cornerPoints = np.float32(cornerPoints)
 		dst = np.float32([[0, 0], [0, h], [w, h], [w, 0]])
 		mat = cv2.getPerspectiveTransform(cornerPoints, dst)
 		return cv2.warpPerspective(image.copy(), mat, (w, h))
 
-	#! 看看要不要寫到這裡
 	@staticmethod
-	def getNumber(image) -> str:
+	def getNumber(image: np.ndarray) -> str:
 		reader = easyocr.Reader(['en'])
-		text = ''.join(reader.readtext(image, detail = 0))
-		return text.strip(' ').upper()
-
-
-
-class TrafficLightData:
-
-	# 紅綠燈狀態
+		text: List[Any] = reader.readtext(image, detail = 0)
+		number: str = ''.join(text)
+		return number.strip(' ').upper()
+ 
+ 
+# 紅綠燈狀態
+class TrafficLightState(IntFlag):
 	unknow = 0
 	red    = 1
 	yellow = 2
 	green  = 3
 
+
+class TrafficLightData:
 	def __init__(
 		self,
-		# 紅綠燈圖像
-		image,
+		image: np.ndarray,
+		box  : List,
+		confidence: float
 	):
 		self.image = image
+		self.box = box
+		self.confidence = confidence
 	
 	def calc(self):
-		# 紅綠燈狀態: int
-		self.state = self.getState(self.image)
+		# 紅綠燈狀態
+		self.state: int = self.getState(self.image)
 	
-	def getState(image) -> int:
-		pass
+	@staticmethod
+	def getState(image: np.ndarray) -> TrafficLightState:
+		return TrafficLightState.unknow
 
 
 # 一幀的數據
 class TPFrameData:
 	def __init__(
 		self, 
-		# 圖像: cv2.Mat / path
-		frame: np.ndarray, 
-		# 載具數據
-		vehicles: List[VehicleData], 
-		# 車牌數據
-		licensePlates: List[LicensePlateData], 
-		# 紅綠燈數據
-		trafficLights: List[TrafficLightData], 
-		# 有沒有紅綠燈
-		hasTrafficLight: bool, 
-		# 有沒有車牌
-		hasLicensePlate: bool, 
-		# 是否匹配到車牌號碼
+		frame                 : Union[str, np.ndarray], 
+		vehicles              : List[VehicleData], 
+		licensePlates         : List[LicensePlateData], 
+		trafficLights         : List[TrafficLightData], 
+		hasTrafficLight       : bool, 
+		hasLicensePlate       : bool, 
 		hasMatchTargetLPNumber: bool, 
 	):
-		self.frame = frame
-		self.vehicles = vehicles
-		self.licensePlates = licensePlates
-		self.trafficLights = trafficLights
-		self.hasTrafficLight = hasTrafficLight
-		self.hasLicensePlate = hasLicensePlate
+		# 圖像
+		self.frame                  = frame
+		# 載具數據
+		self.vehicles               = vehicles
+		# 車牌數據
+		self.licensePlates          = licensePlates
+		# 紅綠燈數據
+		self.trafficLights          = trafficLights
+		# 有沒有紅綠燈
+		self.hasTrafficLight        = hasTrafficLight
+		# 有沒有車牌
+		self.hasLicensePlate        = hasLicensePlate
+		# 是否匹配到車牌號碼
 		self.hasMatchTargetLPNumber = hasMatchTargetLPNumber
 
 
 # 一影片的數據
 class TPFrames:
 	def __init__(
-		self, video: Union[str, cv2.VideoCapture], 
+		self, 
+		video: Union[str, cv2.VideoCapture], 
 		framesData: List[TPFrameData] = []
 	):
-		# 影像: cv2.VideoCapture / path
 		self.video = video
 		# 多幀數據
 		self.framesData = framesData
+		# 最後使用的代號
 		self.lastCodename: int = 0
 
-	# frameData: TPFrameData
 	def add(self, frameData: TPFrameData):
 		self.framesData.append(frameData)
 
 	def calc(self):
-		pass
+		for typeName in ['vehicles', 'licensePlates', 'trafficLights']:
+			self.findCorresponding(typeName, len(self.framesData))
 
-	#!
-	def findCorresponding(self, type, frameIndex, ):
+	def findCorresponding(self, typeName: str, frameIndex: int, threshold: float = 0.9):
 		# 跟前一幀比
 		frameData1, frameData2 = self.framesData[frameIndex - 1 : frameIndex]
-		for licensePlateData2 in frameData2.licensePlates:
+		objs1 = getattr(frameData1, typeName)
+		objs2 = getattr(frameData2, typeName)
+		for i, obj2 in enumerate(objs2):
 			IoUs = []
-			for licensePlateData1 in frameData1.licensePlates:
-				IoUs.append(CVModel.IoU(licensePlateData2.box, licensePlateData1.box))
+			for obj1 in objs1:
+				IoUs.append(CVModel.IoU(obj2.box, obj1.box))
 			# 對應前一幀的box
 			maxIndex = np.argmax(IoUs)
-			threshold = 0.9
 			# 小於閥值 或 對應的沒有 codename，給新 codename
-			if IoUs[maxIndex] < threshold or not hasattr(frameData1.licensePlates[maxIndex], 'codename'):
-				licensePlateData2.licensePlates[maxIndex].codename = self.newCodename()
-				continue
+			if IoUs[maxIndex] < threshold or not hasattr(objs1[maxIndex], 'codename'):
+				objs2[maxIndex].codename = self.newCodename()
 			else:
-				licensePlateData2.codename = frameData1.licensePlates[maxIndex].codename
+				objs2[i].codename = objs1[maxIndex].codename
 
 	def newCodename(self) -> int:
 		self.lastCodename += 1
 		return self.lastCodename
 	
-	def getPossiblePositionAtTheNextMoment(self) -> List:
-		if hasattr(..., 'possiblePositionAtTheNextMoment'):
-			pass
-		pass
-
+	#!
+	def getVehicleCorrespondingToTheLicensePlate(self, licensePlateData: LicensePlateData) -> VehicleData:
+		...
+	
+	#!
+	def getPossiblePositionAtTheNextMoment(self, typeName: str) -> List:
+		objs = getattr(self.framesData, typeName)
+		# if hasattr(objs[i], 'possiblePositionAtTheNextMoment'):
+		return []
 
 
 # vehicleDatas = [VehicleData(), VehicleData(), ...] # 一幀

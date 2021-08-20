@@ -23,7 +23,7 @@ def setKey(args):
         settings = json.load(file)
         settings[args.key] = args.val
         json.dump(settings, file)
-        print('Success', str(settings[args.key])
+        print('Success', str(settings[args.key]))
         
 
 def buildArgparser():

@@ -9,7 +9,6 @@ import Levenshtein
 from rich.progress import track
 
 from models.YoloModel.YoloModel import YoloModel
-from models.Timeline.Timeline import Timeline
 from models.helper import *
 
 #!!
@@ -233,16 +232,16 @@ class TrafficPolice:
 	# 辨識車輛
 	def detectCar(self):
 		# 返回時間序列
-		return Timeline()
+		pass
 
 	# 辨識紅綠燈
 	def detectTrafficLight(self):
 		# 返回時間序列
-		return Timeline()
+		pass
 
 	# 辨識交通標誌 
-	def detectTrafficSigns():
-		return Timeline()
+	def detectTrafficSigns(self):
+		pass
 
 	# 判斷車輛行駛方向
 	def drivingDirection(p1, p2):
