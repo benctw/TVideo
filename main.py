@@ -117,9 +117,10 @@ class TrafficPolice:
 	# 獲得車牌號碼
 	@staticmethod
 	def getLPNumber(image):
-		reader = easyocr.Reader(['en']) # need to run only once to load model into memory
-		text = ''.join(reader.readtext(image, detail = 0))
-		return text.strip(' ').upper()
+		reader = easyocr.Reader(['en'])
+		text = reader.readtext(image, detail = 0)
+		number = ''.join(text).replace(' ', '').upper()
+		return number
 	
 	# 矯正
 	@staticmethod
@@ -314,7 +315,7 @@ def main():
 	# imshow(detectImage)
 
 	detectResults = TP.LPModel.detectVideo("D:/下載/右轉01(YDE-999，185410-185413).mp4")
-	
+	detectResults.table()
 	# def callbackDetectResultReturnCustomTexts(detectResult):
 	# 	customTexts = []
 	# 	croppedImages = detectResult.cropAll(1)
@@ -322,9 +323,15 @@ def main():
 	# 		customTexts.append(TrafficPolice.getLPNumber(croppedImage))
 	# 	return customTexts
 
-	def callbackReturnTexts(detectResult, i, classID, box, confidence, j):
-		croppedImages = detectResult.cropAll('license plate', indexs=detectResult.NMSIndexs)
-		return TrafficPolice.getLPNumber(croppedImages[j])
+	def callbackReturnTexts(detectResult, frameIndex, classID, box, confidence, j):
+		detectResult.table()
+		print(frameIndex, classID, box, confidence, j)
+		croppedImages = detectResult.cropAll( 'license plate', indexs=detectResult.NMSIndexs)
+		if not croppedImages[j] is None:
+			number = TrafficPolice.getLPNumber(croppedImages[j])
+			print(f'number: {number}')
+			return number
+		return ''
 
 	detectResults.drawBoxes(detectResults.NMSIndexs, callbackReturnTexts)
 	TP.saveVideo(detectResults.drawBoxes(), "D:/下載/右轉01(YDE-999，185410-185413)_result_車牌分析2.mp4")

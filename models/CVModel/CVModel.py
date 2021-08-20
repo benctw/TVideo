@@ -140,7 +140,7 @@ class DetectResult:
 		p1x, p1y, p2x, p2y = self.boxes[boxIndex]
 		return croppedImage[p1y:p2y, p1x:p2x]
 
-	def cropAll(self, classID, indexs = None):
+	def cropAll(self, classID, indexs):
 		croppedImages = []
 		# 參數接受 label: str 和 classID: int 類型
 		if type(classID) == str:
@@ -148,12 +148,14 @@ class DetectResult:
 		elif type(classID) != int:
 			raise ValueError('{} 有誤，每個參數都必須是 int 或 str 類型'.format(classID))
 
-		if indexs == None:
-			indexs = self.AllIndex
-
 		for i in range(0, self.count):
-			croppedImages.append(self.crop(i) if self.classIDs[i] == classID and i in indexs else None)
-
+			if (self.classIDs[i] == classID) and (i in indexs):
+				croppedImages.append(self.crop(i))
+				print(f"add crop {i}")
+			else:
+				croppedImages.append(None)
+				print(f"add none {i}")
+		
 		return croppedImages
 
 	def table(self):
@@ -225,11 +227,16 @@ class DetectResults:
 		results = []
 		# 對所有的結果繪畫框
 		if indexs == self.AllIndex:
-			for i, detectResult in enumerate(self.detectResults):
-				results.append(detectResult.drawBoxes([int(j) for j in range(0, detectResult.count)], lambda *args: callbackReturnTexts(detectResult, i, *args)))
+			for frameIndex, detectResult in enumerate(self.detectResults):
+				results.append(detectResult.drawBoxes([int(j) for j in range(0, detectResult.count)], lambda classID, box, confidence, j: callbackReturnTexts(detectResult, frameIndex, classID, box, confidence, j)))
 		
 		elif indexs == self.NMSIndexs:
-			for i, detectResult in enumerate(self.detectResults):
-				results.append(detectResult.drawBoxes(detectResult.NMSIndexs, lambda *args: callbackReturnTexts(detectResult, i, *args)))
+			for frameIndex, detectResult in enumerate(self.detectResults):
+				results.append(detectResult.drawBoxes(detectResult.NMSIndexs, lambda classID, box, confidence, j: callbackReturnTexts(detectResult, frameIndex, classID, box, confidence, j)))
 		
 		return results
+
+	def table(self):
+		for i, detectResult in enumerate(self.detectResults):
+			print(f'Frame Index: {i}')
+			detectResult.table()

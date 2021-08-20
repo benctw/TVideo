@@ -18,6 +18,8 @@ class YoloModel(CVModel):
 		self.minConfidence = minConfidence
 		self.labels = open(self.namesPath).read().strip().split('\n')
 		self.net = cv2.dnn.readNetFromDarknet(self.configPath, self.weightsPath)
+		self.net.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
+		self.net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
 		self.outputLayerNames = [self.net.getLayerNames()[i[0] - 1] for i in self.net.getUnconnectedOutLayers()]
 		print("[INFO] Loaded YOLO Model!")
 
