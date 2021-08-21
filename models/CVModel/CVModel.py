@@ -253,6 +253,14 @@ class DetectResults:
 		
 		return results
 	
+	def loop(self, indexs, callback):
+		results = []
+		for frameIndex, detectResult in enumerate(self.detectResults):
+			for objIndex in range(0, detectResult.count):
+				if objIndex in indexs:
+					results.append(callback(detectResult, frameIndex, detectResult.classIDs[objIndex], detectResult.boxes[objIndex], detectResult.confidences[objIndex], objIndex))
+		return results
+
 	def draw(self, indexs, callbackCroppedImage):
 		results = []
 		if indexs == self.AllIndex:

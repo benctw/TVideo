@@ -117,7 +117,7 @@ class TrafficPolice:
 
 	#//////// 車牌 ////////#
 
-	# 獲得車牌號碼
+	#! 獲得車牌號碼
 	@staticmethod
 	def getLPNumber(image):
 		reader = easyocr.Reader(['en'])
@@ -189,7 +189,7 @@ class TrafficPolice:
 		newApprox = np.float32([p1, p2, p3, p4])
 		# 實物的長寬比
 		#!
-		dst = np.float32([[0, 0], [0, 150], [356, 150], [356, 0]])
+		dst = np.float32(np.array([[0, 0], [0, 150], [356, 150], [356, 0]]))
 		mat = cv2.getPerspectiveTransform(newApprox, dst)
 		result = cv2.warpPerspective(oimg.copy(), mat, (356, 150))
 		return [result, p1, p2, p3, p4]
@@ -338,10 +338,18 @@ def main():
 
 	# video 車牌x
 	video = cv2.VideoCapture("D:/下載/違規影片-20210820T200841Z-001/違規影片/03-紅燈直行/直行08-(XS5-327，182607-182609).mp4")
-	interval = 3
+	interval = 1
 	detectResults = TP.LPModel.detectVideo(video, interval)
 	detectResults.table()
-	detectResults.setColors([np.array([0, 0, 255]), np.array([0, 0, 0])])
+	detectResults.setColors([np.array([0, 0, 255]), np.array([255, 0, 0])])
+
+	# detector = cv2.SIFT_create()
+	# def callbackKeypoints(detectResult, frameIndex, croppedImage, i):
+	# 	keypoints = detector.detect(croppedImage)
+	# 	img_keypoints = np.empty((croppedImage.shape[0], croppedImage.shape[1], 3), dtype=np.uint8)
+	# 	cv2.drawKeypoints(croppedImage, keypoints, img_keypoints)
+	# 	return  img_keypoints
+	# resultImages = detectResults.draw(detectResults.NMSIndexs, callbackKeypoints)
 
 	def callbackReturnTexts(detectResult, frameIndex, classID, box, confidence, i):
 		if detectResult.classIDs[i] == 1:
@@ -371,7 +379,7 @@ def main():
 	resultImages = detectResults.draw(detectResults.NMSIndexs, callbackCroppedImage)
 	fps = video.get(cv2.CAP_PROP_FPS)
 	print('fps: ', fps)
-	TP.saveVideo(resultImages, "D:/下載/result/直行08-(XS5-327，182607-182609)2.mp4", fps / interval)
+	TP.saveVideo(resultImages, "D:/下載/result/直行08-(XS5-327，182607-182609)6.mp4", fps / interval)
 
 
 if __name__ == '__main__':

@@ -1,4 +1,6 @@
-from typing import List, Set, Tuple, Dict, Any, Union
+import collections
+import re
+from typing import List, OrderedDict, Set, Tuple, Dict, Any, Union, Callable
 from enum import IntFlag
 import easyocr
 import numpy as np
@@ -113,15 +115,25 @@ class LicensePlateData:
 	@staticmethod
 	def correct(image: np.ndarray, cornerPoints,  w: int, h: int) -> np.ndarray:
 		cornerPoints = np.float32(cornerPoints)
-		dst = np.float32([[0, 0], [0, h], [w, h], [w, 0]])
+		dst = np.float32(np.array([[0, 0], [0, h], [w, h], [w, 0]]))
 		mat = cv2.getPerspectiveTransform(cornerPoints, dst)
 		return cv2.warpPerspective(image.copy(), mat, (w, h))
 
 	@staticmethod
 	def getNumber(image: np.ndarray) -> str:
+		h, w = image.shape[:2]
+		imageCenterPoint = (w / 2, h / 2)
 		reader = easyocr.Reader(['en'])
-		text: List[Any] = reader.readtext(image, detail = 0)
-		return ''.join(text).replace(' ', '').upper()
+		easyocrResult: List[Any] = reader.readtext(image)
+		if len(easyocrResult) <= 1:
+			return re.sub(r'[^\dA-Z]+', '', easyocrResult[0][1].upper())
+		# 只提取最接近中心點的文字
+		distanceFromCenterPoints = []
+		for box, _, _ in easyocrResult:
+			centerPoint = CVModel.getCenterPosition(box)
+			distanceFromCenterPoints.append(abs(centerPoint[0] - imageCenterPoint[0]) + abs(centerPoint[1] - imageCenterPoint[1]))
+		minIndex =  np.argmin(distanceFromCenterPoints)
+		return re.sub(r'[^\dA-Z]+', '', easyocrResult[minIndex][1].upper())
 
 
 # 紅綠燈狀態
@@ -156,50 +168,78 @@ class TrafficLightData:
 class TPFrameData:
 	def __init__(
 		self, 
-		frame                 : Union[str, np.ndarray], 
-		vehicles              : List[VehicleData], 
-		licensePlates         : List[LicensePlateData], 
-		trafficLights         : List[TrafficLightData], 
-		hasTrafficLight       : bool, 
-		hasLicensePlate       : bool, 
-		hasMatchTargetLPNumber: bool, 
+		frame                 : Union[np.ndarray], 
+		# vehicles              : List[VehicleData], 
+		# licensePlates         : List[LicensePlateData], 
+		# trafficLights         : List[TrafficLightData], 
+		# hasTrafficLight       : bool, 
+		# hasLicensePlate       : bool, 
+		# hasMatchTargetLPNumber: bool, 
 	):
 		# 圖像
 		self.frame                  = frame
-		# 載具數據
-		self.vehicles               = vehicles
-		# 車牌數據
-		self.licensePlates          = licensePlates
-		# 紅綠燈數據
-		self.trafficLights          = trafficLights
-		# 有沒有紅綠燈
-		self.hasTrafficLight        = hasTrafficLight
-		# 有沒有車牌
-		self.hasLicensePlate        = hasLicensePlate
+		# # 載具數據
+		# self.vehicles               = vehicles
+		# # 車牌數據
+		# self.licensePlates          = licensePlates
+		# # 紅綠燈數據
+		# self.trafficLights          = trafficLights
+		# # 有沒有紅綠燈
+		# self.hasTrafficLight        = hasTrafficLight
+		# # 有沒有車牌
+		# self.hasLicensePlate        = hasLicensePlate
 		# 是否匹配到車牌號碼
-		self.hasMatchTargetLPNumber = hasMatchTargetLPNumber
+		# self.hasMatchTargetLPNumber = hasMatchTargetLPNumber
 
+	def addObj(self, className: str, data: Any):
+		if hasattr(self, className):
+			setattr(self, className, getattr(self, className).append(data))
+		else:
+			setattr(self, className, [data])
 
 # 一影片的數據
 class TPFrames:
 	def __init__(
 		self, 
 		video: Union[str, cv2.VideoCapture], 
-		framesData: List[TPFrameData] = []
+		# framesData: List[TPFrameData] = []
+		lastCodename: int = 0
 	):
 		self.video = video
-		# 多幀數據
-		self.framesData = framesData
+		# 多幀數據（從 video 初始化）
+		self.framesData = [TPFrameData(frame) for frame in CVModel.getFrames(self.video)]
+		# 幀數數目
+		self.length = len(self.framesData)
 		# 最後使用的代號
-		self.lastCodename: int = 0
+		self.lastCodename = lastCodename
+		# 每幀會處理的流程
+		self.process: OrderedDict[str, Callable[[TPFrameData, int, Any], Any]] = collections.OrderedDict()
+		# 上一個流程返回的結果
+		self.previousProcessResult: Any = None
 
-	def add(self, frameData: TPFrameData):
-		self.framesData.append(frameData)
+	# def add(self, frameData: TPFrameData):
+	# 	self.framesData.append(frameData)
+
+	def forEach(self, callback: Callable[[TPFrameData, int], None]):
+		for i in range(0, self.length):
+			callback(self.framesData[i], i)
+
+	def addProcess(self, processName, func):
+		self.process[processName] = func
+		return self
+	
+	def runProcess(self):
+		for i in range(0, self.length):
+			print('Frame Index:', i)
+			for processName, func in self.process.items():
+				print('Running: ', processName)
+				self.previousProcessResult = func(self.framesData[i], i, self.previousProcessResult)
 
 	def calc(self):
 		for typeName in ['vehicles', 'licensePlates', 'trafficLights']:
 			self.findCorresponding(typeName, len(self.framesData))
 
+	#!
 	def findCorresponding(self, typeName: str, frameIndex: int, threshold: float = 0.9):
 		# 跟前一幀比
 		frameData1, frameData2 = self.framesData[frameIndex - 1 : frameIndex]
@@ -242,3 +282,9 @@ def detectResultToTPFrameDatas(detectResult: DetectResult) -> Union[List[License
 #!
 def detectResultsToTPFramesData(detectResults: DetectResults) -> List[TPFrameData]:
 	...
+
+# using
+# tpFrames = TPFrames("video")
+# tpFrames.addProcess('yolo', func='')
+# # 調用self.previousProcessResult來獲得上一個流程的回傳結果
+# tpFrames.addProcess('yolo', func='')
