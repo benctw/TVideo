@@ -8,8 +8,10 @@ import easyocr
 import Levenshtein
 from rich.progress import track
 
+from models.CVModel.CVModel import CVModel
 from models.YoloModel.YoloModel import YoloModel
 from models.helper import *
+from models.TPFrames.TPFrames import *
 
 #!!
 __dirname = os.path.dirname(os.path.abspath(__file__))
@@ -55,6 +57,7 @@ def detect(args):
 	TrafficPolice().process(args.path)
 	os._exit(0)
 
+#!
 # 執行 yolo
 def yolo(args):
 	TP = TrafficPolice()
@@ -70,7 +73,7 @@ def yolo(args):
 	# video 一定要有--save
 	if not args.video is None:
 		detectResults = TP.LPModel.detectVideo(args.video)
-		TP.saveVideo(detectResults.drawBoxes(), args.save)
+		TP.saveVideo(detectResults.drawBoxes(indexs=detectResults.NMSIndexs), args.save)
 	os._exit(0)
 
 # 執行 resa
@@ -103,7 +106,7 @@ class TrafficPolice:
 		)
 		self.targetLPNumber = ""
 
-	def process():
+	def process(self):
 		pass
 
 	#//////// 共同 ////////#
@@ -119,8 +122,7 @@ class TrafficPolice:
 	def getLPNumber(image):
 		reader = easyocr.Reader(['en'])
 		text = reader.readtext(image, detail = 0)
-		number = ''.join(text).replace(' ', '').upper()
-		return number
+		return ''.join(text).replace(' ', '').upper()
 	
 	# 矯正
 	@staticmethod
@@ -213,7 +215,7 @@ class TrafficPolice:
 					print('[INFO] 找到對應車牌號碼: {}'.format(LPNumber))
 		elif path.lower().endswith(('.mp4', '.avi')):
 			detectResults = self.LPModel.detectVideo(path)
-			self.saveVideo(detectResults.drawBoxes(), "/content/gdrive/MyDrive/video/result.mp4")
+			self.saveVideo(detectResults.drawBoxes(detectResults.NMSIndexs), "/content/gdrive/MyDrive/video/result.mp4")
 
 			###!!!
 			# fourcc = cv2.VideoWriter_fourcc(*'mp4v')
@@ -245,6 +247,7 @@ class TrafficPolice:
 		pass
 
 	# 判斷車輛行駛方向
+	@staticmethod
 	def drivingDirection(p1, p2):
 		vector = (p1[i] - p2[i] for i in range(0, len(p1)))
 		norm = math.sqrt(sum([v ** 2 for v in vector]))
@@ -255,24 +258,24 @@ class TrafficPolice:
 	def cropVideo(self, start, end):
 		pass
 
-	def markVehicle(box):
+	def markVehicle(self):
 		pass
 	
-	def guessPositionOfNextMoment():
+	def guessPositionOfNextMoment(self):
 		pass
 
 	# 儲存片段到指定路徑 ###只支持MP4
 	@staticmethod
-	def saveVideo(images, path):
+	def saveVideo(images, path, fps = 30):
 		fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 		height, width = images[0].shape[:2]
-		out = cv2.VideoWriter(path, fourcc, 20.0, (int(width), int(height)))
+		out = cv2.VideoWriter(path, fourcc, fps, (int(width), int(height)))
 		for image in track(images, "saving video"):
 			out.write(image)
 		out.release()
 
 	# 生成報告
-	def createReport():
+	def createReport(self):
 		# TODO 先定義 report 的格式和内容
 		pass
 	
@@ -314,31 +317,61 @@ def main():
 	# detectImage = detectResult.drawBoxes(detectResult.NMSIndexs, callbackReturnLPNumber)
 	# imshow(detectImage)
 
-	detectResults = TP.LPModel.detectVideo("D:/下載/右轉01(YDE-999，185410-185413).mp4")
-	detectResults.table()
-	# def callbackDetectResultReturnCustomTexts(detectResult):
-	# 	customTexts = []
-	# 	croppedImages = detectResult.cropAll(1)
-	# 	for croppedImage in croppedImages:
-	# 		customTexts.append(TrafficPolice.getLPNumber(croppedImage))
-	# 	return customTexts
 
-	def callbackReturnTexts(detectResult, frameIndex, classID, box, confidence, j):
-		detectResult.table()
-		print(frameIndex, classID, box, confidence, j)
-		croppedImages = detectResult.cropAll( 'license plate', indexs=detectResult.NMSIndexs)
-		if not croppedImages[j] is None:
-			number = TrafficPolice.getLPNumber(croppedImages[j])
-			print(f'number: {number}')
-			return number
-		return ''
-
-	detectResults.drawBoxes(detectResults.NMSIndexs, callbackReturnTexts)
-	TP.saveVideo(detectResults.drawBoxes(), "D:/下載/右轉01(YDE-999，185410-185413)_result_車牌分析2.mp4")
+	# video 車牌
+	# video = cv2.VideoCapture("D:/下載/違規影片-20210820T200841Z-001/違規影片/04-紅燈越線/越線01-(006-PNG，123403-123406).mp4")
+	# interval = 3
+	# detectResults = TP.LPModel.detectVideo(video, interval)
+	# detectResults.table()
+	# def callbackReturnTexts(detectResult, frameIndex, classID, box, confidence, i):
+	# 	if detectResult.classIDs[i] == 1:
+	# 		number = TrafficPolice.getLPNumber(detectResult.crop(i))
+	# 		print(f'number: {number}')
+	# 		return number
+	# 	return None
+	# resultImages = detectResults.drawBoxes(detectResults.NMSIndexs, callbackReturnTexts)
+	# fps = video.get(cv2.CAP_PROP_FPS)
+	# print('fps: ', fps)
+	# TP.saveVideo(resultImages, "D:/下載/result/越線01-(006-PNG，123403-123406).mp4", fps / interval)
 	
-	# resultImage = detectResult.drawBoxes()
 
-	# cv2.imwrite("/content/TrafficPolice/store/output/2.jpg", resultImage)
+
+	# video 車牌x
+	video = cv2.VideoCapture("D:/下載/違規影片-20210820T200841Z-001/違規影片/03-紅燈直行/直行08-(XS5-327，182607-182609).mp4")
+	interval = 3
+	detectResults = TP.LPModel.detectVideo(video, interval)
+	detectResults.table()
+	detectResults.setColors([np.array([0, 0, 255]), np.array([0, 0, 0])])
+
+	def callbackReturnTexts(detectResult, frameIndex, classID, box, confidence, i):
+		if detectResult.classIDs[i] == 1:
+			lp = LicensePlateData(detectResult.crop(i), detectResult.boxes[i], detectResult.confidences[i])
+			# number = TrafficPolice.getLPNumber(detectResult.crop(i))
+			print(f'number: {lp.number}')
+			return lp.number
+		return None
+	resultImages = detectResults.drawBoxes(detectResults.NMSIndexs, callbackReturnTexts)
+	
+	for i in range(0, len(detectResults.detectResults)):
+		detectResults.detectResults[i].image = resultImages[i]
+
+	def callbackCroppedImage(detectResult, frameIndex, croppedImage, i):
+		if detectResult.classIDs[i] == 1:
+			# correctedImage, p1, p2, p3, p4 = TP.correct(croppedImage)
+			# number = TrafficPolice.getLPNumber(CVModel.crop(correctedImage, detectResult.boxes[i]))
+			# print(f'number: {number}')
+
+			cornerPoints = LicensePlateData.getCornerPoints(croppedImage)
+			if len(cornerPoints) != 0:
+				cornerPoints = np.array(cornerPoints)
+				cv2.polylines(croppedImage, [cornerPoints], True, (0, 0, 255), 2, cv2.LINE_AA)
+				cv2.line(croppedImage, cornerPoints[0], cornerPoints[2], (0, 255, 0), 2, cv2.LINE_AA)
+				cv2.line(croppedImage, cornerPoints[1], cornerPoints[3], (0, 255, 0), 2, cv2.LINE_AA)
+		return croppedImage
+	resultImages = detectResults.draw(detectResults.NMSIndexs, callbackCroppedImage)
+	fps = video.get(cv2.CAP_PROP_FPS)
+	print('fps: ', fps)
+	TP.saveVideo(resultImages, "D:/下載/result/直行08-(XS5-327，182607-182609)2.mp4", fps / interval)
 
 
 if __name__ == '__main__':

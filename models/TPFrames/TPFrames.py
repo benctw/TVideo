@@ -4,7 +4,7 @@ import easyocr
 import numpy as np
 import cv2
 
-from models.CVModel.CVModel import CVModel
+from models.CVModel.CVModel import CVModel, DetectResult, DetectResults
 from models.TPFrames.TFType import Box, Point2D
 
 
@@ -24,7 +24,7 @@ class VehicleData:
 	# 生成之後計算的數據
 	def calc(self):
 		# 載具質心點位置
-		self.centerPosition: List = CVModel.getCenterPosition(self.box)
+		self.centerPosition: List = CVModel.getCenterPosition(self.cornerPoints)
 		# 方向
 		# self.direction = direction
 		# 下一時刻可能的位置
@@ -52,14 +52,14 @@ class LicensePlateData:
 	
 	# 生成之後計算的數據
 	def calc(self):
-		# 車牌質心點位置
-		self.centerPosition: List = CVModel.getCenterPosition(self.box)
 		# 車牌的四個角點
 		self.cornerPoints  : List = self.getCornerPoints(self.image)
 		# 矯正的圖像
 		self.correctImage  : np.ndarray = self.correct(self.image, self.cornerPoints, int(150 * self.ratioOfLicensePlate), 150)
+		# 車牌質心點位置
+		self.centerPosition: List = CVModel.getCenterPosition(self.cornerPoints)
 		# 車牌號碼
-		self.number        : str = self.getNumber(self.image)
+		self.number        : str = self.getNumber(self.correctImage)
 	
 	@staticmethod
 	def getCornerPoints(image: np.ndarray) -> List:
@@ -121,10 +121,9 @@ class LicensePlateData:
 	def getNumber(image: np.ndarray) -> str:
 		reader = easyocr.Reader(['en'])
 		text: List[Any] = reader.readtext(image, detail = 0)
-		number: str = ''.join(text)
-		return number.strip(' ').upper()
- 
- 
+		return ''.join(text).replace(' ', '').upper()
+
+
 # 紅綠燈狀態
 class TrafficLightState(IntFlag):
 	unknow = 0
@@ -233,7 +232,13 @@ class TPFrames:
 		return []
 
 
-# vehicleDatas = [VehicleData(), VehicleData(), ...] # 一幀
-# frameData = TPFrameData(image , vehicles=vehicleDatas)
-# TPFrames().add(frameData)
-# TPFrames().done()
+#!
+def detectResultToTPFrameDatas(detectResult: DetectResult) -> Union[List[LicensePlateData], List[TrafficLightData]]:
+	licensePlates = []
+	for i in range(0, detectResult.count):
+		licensePlates.append(LicensePlateData(detectResult.image, detectResult.boxes[i], detectResult.confidence[i]))
+	return licensePlates
+
+#!
+def detectResultsToTPFramesData(detectResults: DetectResults) -> List[TPFrameData]:
+	...

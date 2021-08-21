@@ -11,17 +11,18 @@ class CVModel(ABC):
 
 	@staticmethod
 	def getFrames(videoCapture):
+		needRelease = False
 		if type(videoCapture) is str:
 			videoCapture = cv2.VideoCapture(videoCapture)
+			needRelease = True
 		frames = []
 		rval = False
 		if videoCapture.isOpened(): rval, frame = videoCapture.read() #判斷是否開啟影片
 		while rval:	#擷取視頻至結束
-
 			frames.append(frame)
-
 			rval, frame = videoCapture.read()
-		videoCapture.release()
+		if needRelease:
+			videoCapture.release()
 		return frames
 
 	@abstractmethod
@@ -63,6 +64,11 @@ class CVModel(ABC):
 		allArea = (rect1[1][0] - rect1[0][0]) * (rect1[1][1] - rect1[0][1]) + (rect2[1][0]-rect2[0][0]) * (rect2[1][1]-rect2[0][1]) - iouArea
 		# IoU =  面積交集 / 面積聯集
 		return iouArea / allArea
+	
+	@staticmethod
+	def crop(image, box):
+		croppedImage = image.copy()
+		return croppedImage[box[1]:box[3], box[0]:box[2]]
 
 ### 改成只針對yolo的結果
 class DetectResult:
@@ -75,11 +81,12 @@ class DetectResult:
 		self.confidences = []
 		self.classIDs = []
 		self.colors = colors
+		self.NMSIndexs = []
 
 	@staticmethod
 	def checkColor(color):
 		if isinstance(color, (list, tuple)):
-			raise TypeError
+			raise TypeError()
 		if len(color) != 3:
 			raise ValueError("color 長度不為 3")
 
@@ -109,6 +116,7 @@ class DetectResult:
 
 	# 添加結果
 	def add(self, classID, box, confidence):
+		box = [abs(p) for p in box]
 		self.boxes.append(box)
 		self.confidences.append(confidence)
 		self.classIDs.append(classID)
@@ -129,7 +137,8 @@ class DetectResult:
 
 	def calcNMS(self):
 		idxs = cv2.dnn.NMSBoxes(self.boxes, self.confidences, self.confidence, self.threshold)
-		self.NMSIndexs = idxs.flatten()
+		if len(idxs) > 0:	
+			self.NMSIndexs = idxs.flatten()
 
 	@property
 	def AllIndex(self):
@@ -151,10 +160,8 @@ class DetectResult:
 		for i in range(0, self.count):
 			if (self.classIDs[i] == classID) and (i in indexs):
 				croppedImages.append(self.crop(i))
-				print(f"add crop {i}")
 			else:
 				croppedImages.append(None)
-				print(f"add none {i}")
 		
 		return croppedImages
 
@@ -177,19 +184,22 @@ class DetectResult:
 			color = [int(c) for c in self.colors[self.classIDs[i]]]
 			# 框
 			cv2.rectangle(resultImage, (p1x, p1y), (p2x, p2y), color, 2)
-			# 如果沒有信息不繪畫字
-			if callbackReturnText == None:
+			# 如果沒有定義函數不繪畫字
+			if callbackReturnText is None:
 				return resultImage
 			# 附帶的字
 			text = callbackReturnText(self.classIDs[i], self.boxes[i], self.confidences[i], i)
+			# 如果沒有信息不繪畫字
+			if text == None:
+				return resultImage
 			# 字型設定
 			font = cv2.FONT_HERSHEY_COMPLEX
-			fontScale = 0.5
+			fontScale = 1
 			fontThickness = 1
 			# 顏色反相
-			# textColor = [255 - c for c in color]
+			textColor = [255 - c for c in color]
 			# 對比色
-			textColor = [color[1], color[2], color[0]]
+			# textColor = [color[1], color[2], color[0]]
 			# 獲取字型尺寸
 			(textW, textH), _ = cv2.getTextSize(text, font, fontScale, fontThickness)
 			# 添加字的背景
@@ -198,6 +208,13 @@ class DetectResult:
 			cv2.putText(resultImage, text, (p1x, p1y), font, fontScale, textColor, fontThickness, cv2.LINE_AA)
 		return resultImage
 
+	def draw(self, indexs, callbackCroppedImage):
+		resultImage = self.image.copy()
+		for i in indexs:
+			image = callbackCroppedImage(self.crop(i), i)
+			p1x, p1y, p2x, p2y = self.boxes[i]
+			resultImage[p1y:p2y, p1x:p2x] = image
+		return resultImage
 
 class DetectResults:
 	#! 改名
@@ -227,14 +244,27 @@ class DetectResults:
 		results = []
 		# 對所有的結果繪畫框
 		if indexs == self.AllIndex:
-			for frameIndex, detectResult in enumerate(self.detectResults):
+			for frameIndex, detectResult in enumerate(track(self.detectResults, 'drawing')):
 				results.append(detectResult.drawBoxes([int(j) for j in range(0, detectResult.count)], lambda classID, box, confidence, j: callbackReturnTexts(detectResult, frameIndex, classID, box, confidence, j)))
 		
 		elif indexs == self.NMSIndexs:
-			for frameIndex, detectResult in enumerate(self.detectResults):
+			for frameIndex, detectResult in enumerate(track(self.detectResults, 'drawing')):
 				results.append(detectResult.drawBoxes(detectResult.NMSIndexs, lambda classID, box, confidence, j: callbackReturnTexts(detectResult, frameIndex, classID, box, confidence, j)))
 		
 		return results
+	
+	def draw(self, indexs, callbackCroppedImage):
+		results = []
+		if indexs == self.AllIndex:
+			for frameIndex, detectResult in enumerate(track(self.detectResults, 'drawing')):
+				results.append(detectResult.draw([int(j) for j in range(0, detectResult.count)], lambda croppedImage, i: callbackCroppedImage(detectResult, frameIndex, croppedImage, i)))
+		
+		elif indexs == self.NMSIndexs:
+			for frameIndex, detectResult in enumerate(track(self.detectResults, 'drawing')):
+				results.append(detectResult.draw(detectResult.NMSIndexs, lambda croppedImage, i: callbackCroppedImage(detectResult, frameIndex, croppedImage, i)))
+		
+		return results
+
 
 	def table(self):
 		for i, detectResult in enumerate(self.detectResults):
