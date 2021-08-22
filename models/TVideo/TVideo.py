@@ -1,14 +1,16 @@
 import collections
 import re
-from typing import List, OrderedDict, Set, Tuple, Dict, Any, Union, Callable
-from enum import IntFlag
+from typing import List, OrderedDict, Tuple, Any, Union, Callable
+from enum import Enum
 import easyocr
 import numpy as np
 import cv2
+from rich.progress import track
 
 from models.CVModel.CVModel import CVModel, DetectResult, DetectResults
-from models.TPFrames.TFType import Box, Point2D
 
+Point = Tuple[int, int]
+Box = Tuple[Point, Point]
 
 # 一載具的數據
 class VehicleData:
@@ -25,6 +27,7 @@ class VehicleData:
 
 	# 生成之後計算的數據
 	def calc(self):
+		self.cornerPoints = ...
 		# 載具質心點位置
 		self.centerPosition: List = CVModel.getCenterPosition(self.cornerPoints)
 		# 方向
@@ -113,7 +116,7 @@ class LicensePlateData:
 		return lp + rp
 	
 	@staticmethod
-	def correct(image: np.ndarray, cornerPoints,  w: int, h: int) -> np.ndarray:
+	def correct(image: np.ndarray, cornerPoints, w: int, h: int) -> np.ndarray:
 		cornerPoints = np.float32(cornerPoints)
 		dst = np.float32(np.array([[0, 0], [0, h], [w, h], [w, 0]]))
 		mat = cv2.getPerspectiveTransform(cornerPoints, dst)
@@ -137,12 +140,11 @@ class LicensePlateData:
 
 
 # 紅綠燈狀態
-class TrafficLightState(IntFlag):
+class TrafficLightState(Enum):
 	unknow = 0
 	red    = 1
 	yellow = 2
 	green  = 3
-
 
 class TrafficLightData:
 	def __init__(
@@ -154,18 +156,49 @@ class TrafficLightData:
 		self.image = image
 		self.box = box
 		self.confidence = confidence
+		self.calc()
 	
 	def calc(self):
 		# 紅綠燈狀態
-		self.state: int = self.getState(self.image)
+		self.state: TrafficLightState = self.getState(self.image)
 	
 	@staticmethod
 	def getState(image: np.ndarray) -> TrafficLightState:
+		hsvImg = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+		# min and max HSV values
+		redMin  = np.array([0, 5, 150])
+		redMax  = np.array([8, 255, 255])
+		redMin2 = np.array([175, 5, 150])
+		redMax2 = np.array([180, 255, 255])
+
+		yellowMin = np.array([20, 5, 150])
+		yellowMax = np.array([30, 255, 255])
+
+		greenMin = np.array([49, 79, 137])
+		greenMax = np.array([90, 255, 255])
+
+		redThresh    = cv2.inRange(hsvImg, redMin, redMax) + cv2.inRange(hsvImg, redMin2, redMax2)
+		yellowThresh = cv2.inRange(hsvImg, yellowMin, yellowMax)
+		greenThresh  = cv2.inRange(hsvImg, greenMin, greenMax)
+
+		redBlur    = cv2.medianBlur(redThresh, 5)
+		yellowBlur = cv2.medianBlur(yellowThresh, 5)
+		greenBlur  = cv2.medianBlur(greenThresh, 5)
+
+		red    = cv2.countNonZero(redBlur)
+		yellow = cv2.countNonZero(yellowBlur)
+		green  = cv2.countNonZero(greenBlur)
+
+		lightColor = max(red, yellow, green)
+
+		if lightColor > 60:
+			if lightColor == red: return TrafficLightState.red
+			elif lightColor == yellow: return TrafficLightState.yellow
+			elif lightColor == green: return TrafficLightState.green
 		return TrafficLightState.unknow
 
-
 # 一幀的數據
-class TPFrameData:
+class TFrameData:
 	def __init__(
 		self, 
 		frame                 : Union[np.ndarray], 
@@ -197,44 +230,78 @@ class TPFrameData:
 		else:
 			setattr(self, className, [data])
 
+ForEachFrameData = Callable[[TFrameData, int], None]
+
 # 一影片的數據
-class TPFrames:
+class TVideo:
 	def __init__(
 		self, 
-		video: Union[str, cv2.VideoCapture], 
-		# framesData: List[TPFrameData] = []
+		path: str, 
+		start: int = 0,
+		end: int = None,
 		lastCodename: int = 0
 	):
-		self.video = video
+		self.path = path
+		self.start = start
+		self.end = end
+
+		videoDetails = self.__getVideoDetails(path, start, end)
+		self.frames    : List[np.ndarray] = videoDetails[0]
+		self.width     : float = videoDetails[1]
+		self.height    : float = videoDetails[2]
+		self.fps       : float = videoDetails[3]
+		self.frameCount: int   = videoDetails[4]
+
 		# 多幀數據（從 video 初始化）
-		self.framesData = [TPFrameData(frame) for frame in CVModel.getFrames(self.video)]
-		# 幀數數目
-		self.length = len(self.framesData)
+		self.framesData: List[TFrameData] = [TFrameData(frame) for frame in self.frames]
 		# 最後使用的代號
 		self.lastCodename = lastCodename
 		# 每幀會處理的流程
-		self.process: OrderedDict[str, Callable[[TPFrameData, int, Any], Any]] = collections.OrderedDict()
+		self.process: OrderedDict[str, ForEachFrameData] = collections.OrderedDict()
 		# 上一個流程返回的結果
 		self.previousProcessResult: Any = None
 
-	# def add(self, frameData: TPFrameData):
+	@staticmethod
+	def __getVideoDetails(path: str, startFrameIndex: int, endFrameIndex: Union[int, None]) -> Any:
+		videoCapture = cv2.VideoCapture(path)
+		frames: List[np.ndarray] = []
+		rval = False
+		frame = np.ndarray = np.array([])
+		i = 0
+		if videoCapture.isOpened(): rval, frame = videoCapture.read()
+		while rval and endFrameIndex != None and i > endFrameIndex:
+			if i >= startFrameIndex:
+				frames.append(frame)
+			i += 1
+			rval, frame = videoCapture.read()
+		width     : float = videoCapture.get(cv2.CAP_PROP_FRAME_WIDTH)
+		height    : float = videoCapture.get(cv2.CAP_PROP_FRAME_HEIGHT)
+		fps       : float = videoCapture.get(cv2.CAP_PROP_FPS)
+		frameCount: int   = videoCapture.get(cv2.CAP_PROP_FRAME_COUNT)
+		videoCapture.release()
+		return [frames, width, height, fps, frameCount]
+	
+	def frameIndex(self, sec: float) -> float: 
+		return sec * self.fps
+	
+	# def add(self, frameData: TFrameData):
 	# 	self.framesData.append(frameData)
 
-	def forEach(self, callback: Callable[[TPFrameData, int], None]):
-		for i in range(0, self.length):
+	def forEach(self, callback: ForEachFrameData):
+		for i in range(0, self.frameCount):
 			callback(self.framesData[i], i)
 
-	def addProcess(self, processName, func):
-		self.process[processName] = func
+	def addProcess(self, processName: str, callBack: ForEachFrameData):
+		self.process[processName] = callBack
 		return self
 	
 	def runProcess(self):
-		for i in range(0, self.length):
+		for i in range(0, self.frameCount):
 			print('Frame Index:', i)
 			for processName, func in self.process.items():
 				print('Running: ', processName)
-				self.previousProcessResult = func(self.framesData[i], i, self.previousProcessResult)
-
+				self.previousProcessResult = func(self.framesData[i], i)
+ 
 	def calc(self):
 		for typeName in ['vehicles', 'licensePlates', 'trafficLights']:
 			self.findCorresponding(typeName, len(self.framesData))
@@ -266,25 +333,55 @@ class TPFrames:
 		...
 	
 	#!
-	def getPossiblePositionAtTheNextMoment(self, typeName: str) -> List:
+	def guessPositionOfNextMoment(self, typeName: str) -> List:
 		objs = getattr(self.framesData, typeName)
 		# if hasattr(objs[i], 'possiblePositionAtTheNextMoment'):
 		return []
 
+	def save(self, path: str, fps: float = 30, fourccType: str = 'mp4v'):
+		fourcc = cv2.VideoWriter_fourcc(*fourccType)
+		out = cv2.VideoWriter(path, fourcc, fps, (int(self.width), int(self.height)))
+		for frameData in track(self.framesData, "saving video"):
+			out.write(frameData.frame)
+		out.release()
 
 #!
-def detectResultToTPFrameDatas(detectResult: DetectResult) -> Union[List[LicensePlateData], List[TrafficLightData]]:
+def detectResultToTFrameDatas(detectResult: DetectResult) -> Union[List[LicensePlateData], List[TrafficLightData]]:
 	licensePlates = []
 	for i in range(0, detectResult.count):
 		licensePlates.append(LicensePlateData(detectResult.image, detectResult.boxes[i], detectResult.confidence[i]))
 	return licensePlates
 
 #!
-def detectResultsToTPFramesData(detectResults: DetectResults) -> List[TPFrameData]:
-	...
+def detectResultsToTVideoData(detectResults: DetectResults) -> List[TFrameData]:
+    	...
+
+
+
+class Process:
+	def __init__(self):
+		self.previousProcessResult = ""
+
+	def stop(self):
+		pass
 
 # using
-# tpFrames = TPFrames("video")
-# tpFrames.addProcess('yolo', func='')
+tVideo = TVideo("video")
 # # 調用self.previousProcessResult來獲得上一個流程的回傳結果
-# tpFrames.addProcess('yolo', func='')
+class Funcs(Process):
+	def process(self):
+		self.yolo()
+		# self.draw()
+
+	def yolo(self):
+		pass
+	
+	def draw(self):
+		pass
+
+
+# def func(frameData):
+# 	frameData.
+
+# tVideo.addProcess('yolo', func=func)
+# tVideo.addProcess('yolo', func='')

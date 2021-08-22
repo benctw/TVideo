@@ -12,8 +12,17 @@ class dotdict(dict):
                 d[key] = dotdict.deep(d[key])
         return d
 
-from cv2 import imshow as show, waitKey, destroyAllWindows
+import cv2
+from rich.progress import track
 def imshow(img, title = ''):
-    show(title, img)
-    waitKey(0)
-    destroyAllWindows()
+    cv2.imshow(title, img)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+def saveVideo(images, path, fps = 30, fourccType = 'mp4v'):
+    fourcc = cv2.VideoWriter_fourcc(*fourccType)
+    height, width = images[0].shape[:2]
+    out = cv2.VideoWriter(path, fourcc, fps, (int(width), int(height)))
+    for image in track(images, "saving video"):
+        out.write(image)
+    out.release()
