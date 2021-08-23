@@ -238,7 +238,11 @@ class TFrameData:
 			setattr(self, className, [data])
 
 
-ForEachFrameData = Callable[[TFrameData, int], None]
+class ProcessState(Enum):
+	next = 1
+	stop = 2
+
+ForEachFrameData = Callable[[TFrameData, int], ProcessState]
 
 # 一影片的數據
 class TVideo:
@@ -260,10 +264,10 @@ class TVideo:
 		self.framesData: List[TFrameData] = [TFrameData(frame) for frame in self.frames]
 		# 最後使用的代號
 		self.lastCodename = lastCodename
-		# 每幀會處理的流程
-		self.process: OrderedDict[str, ForEachFrameData] = collections.OrderedDict()
-		# 上一個流程返回的結果 #! 沒有用到
-		self.previousProcessResult: Any = None
+		# # 每幀會處理的流程 #! 沒有用到
+		# self.process: OrderedDict[str, ForEachFrameData] = collections.OrderedDict()
+		# # 上一個流程返回的結果 #! 沒有用到
+		# self.previousProcessResult: Any = None
 
 	@staticmethod
 	def __getVideoDetails(path: str) -> Any:
@@ -282,34 +286,41 @@ class TVideo:
 		frameCount: int = videoCapture.get(cv2.CAP_PROP_FRAME_COUNT)
 		videoCapture.release()
 		return [frames, width, height, fps, frameCount]
-	
-	#! 在實例化TVideo時無法用
-	def secToframeIndex(self, sec: float) -> float: 
-		return sec * self.fps
 
 	def forEach(self, callback: ForEachFrameData):
 		for i in range(0, self.frameCount):
 			callback(self.framesData[i], i)
 
-	def addProcess(self, processName: str, callBack: ForEachFrameData):
-		self.process[processName] = callBack
-		return self
-
-	def runProcess(self, schedule: Callable[[int, int, int], int], process: ForEachFrameData, maxTimes: Union[int, float] = float('inf')):
+	def runProcess(self, schedule: Callable[[int, int, int], int], process: ForEachFrameData, maxTimes: int = None):
 		'''
 		if callbackReturnIntex() return a negative number, will stop this process.
 		'''
-		#!
-		times = 0
 		frameIndex = -1
-		while times < maxTimes:
-			frameIndex = schedule(frameIndex, self.frameCount, times)
-			print('Frame Index:', frameIndex)
-			if frameIndex < 0:
-				print('break')
-				break
-			process(self.framesData[frameIndex], frameIndex)
-			times += 1
+		# 有限
+		if maxTimes != None:
+			for times in track(range(0, maxTimes)):
+				frameIndex = schedule(frameIndex, self.frameCount, times)
+				print('Frame Index:', frameIndex)
+				if frameIndex < 0:
+					print('break')
+					break
+				isBreak = process(self.framesData[frameIndex], frameIndex)
+				if isBreak == ProcessState.stop:
+					break
+		# 無限
+		else:
+			times = 0
+			while True:
+				frameIndex = schedule(frameIndex, self.frameCount, times)
+				print('Frame Index:', frameIndex)
+				if frameIndex < 0:
+					print('break')
+					break
+				isBreak = process(self.framesData[frameIndex], frameIndex)
+				if isBreak == ProcessState.stop:
+					break
+				times += 1
+		return self
 
 	#!
 	def calc(self):

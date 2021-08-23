@@ -243,7 +243,7 @@ def main():
 	""""""""""""""""""""""""""""""""""""
 	TP = TrafficPolice()
 	# 定義處理方法
-	def yoloProcess(frameData: TFrameData, frameIndex: int):
+	def yoloProcess(frameData: TFrameData, frameIndex: int) -> ProcessState:
 		detectResult = TP.LPModel.detectImage(frameData.frame)
 		NMSDetectResult = detectResult.getNMSDetectResult()
 		for objIndex, classID in enumerate(NMSDetectResult.classIDs):
@@ -259,7 +259,11 @@ def main():
 		
 		drawedImage = NMSDetectResult.drawBoxes(NMSDetectResult.AllIndex, NMSDetectResult.msg)
 		frameData.frame = drawedImage
+		return ProcessState.next
 
+	def xxProcess(frameData: TFrameData, frameIndex: int) -> ProcessState:
+		...
+		return ProcessState.next
 	
 	tVideo = TVideo('D:/chiziSave/違規影片/02-紅燈左轉/左轉08-(NER-5877，180153-180155).mp4')
 	tVideo.runProcess(TVideoSchedule.forEachInterval(1), yoloProcess)
