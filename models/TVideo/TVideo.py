@@ -128,7 +128,9 @@ class LicensePlateData:
 		imageCenterPoint = (w / 2, h / 2)
 		reader = easyocr.Reader(['en'])
 		easyocrResult: List[Any] = reader.readtext(image)
-		if len(easyocrResult) <= 1:
+		if len(easyocrResult) == 0:
+			return ''
+		elif len(easyocrResult) == 1:
 			return re.sub(r'[^\dA-Z]+', '', easyocrResult[0][1].upper())
 		# 只提取最接近中心點的文字
 		distanceFromCenterPoints = []
@@ -226,9 +228,15 @@ class TFrameData:
 
 	def addObj(self, className: str, data: Any):
 		if hasattr(self, className):
-			setattr(self, className, getattr(self, className).append(data))
+			# setattr(self, className, getattr(self, className, [data]))
+			attr = getattr(self, className)
+			#! 不知道為什麼會有None
+			if attr == None:
+				attr = []
+			setattr(self, className, attr.append(data))
 		else:
 			setattr(self, className, [data])
+
 
 ForEachFrameData = Callable[[TFrameData, int], None]
 
@@ -236,16 +244,12 @@ ForEachFrameData = Callable[[TFrameData, int], None]
 class TVideo:
 	def __init__(
 		self, 
-		path: str, 
-		start: int = 0,
-		end: int = None,
+		path : str,
 		lastCodename: int = 0
 	):
 		self.path = path
-		self.start = start
-		self.end = end
 
-		videoDetails = self.__getVideoDetails(path, start, end)
+		videoDetails = self.__getVideoDetails(path)
 		self.frames    : List[np.ndarray] = videoDetails[0]
 		self.width     : float = videoDetails[1]
 		self.height    : float = videoDetails[2]
@@ -258,34 +262,30 @@ class TVideo:
 		self.lastCodename = lastCodename
 		# 每幀會處理的流程
 		self.process: OrderedDict[str, ForEachFrameData] = collections.OrderedDict()
-		# 上一個流程返回的結果
+		# 上一個流程返回的結果 #! 沒有用到
 		self.previousProcessResult: Any = None
 
 	@staticmethod
-	def __getVideoDetails(path: str, startFrameIndex: int, endFrameIndex: Union[int, None]) -> Any:
+	def __getVideoDetails(path: str) -> Any:
 		videoCapture = cv2.VideoCapture(path)
 		frames: List[np.ndarray] = []
 		rval = False
-		frame = np.ndarray = np.array([])
-		i = 0
+		frame: np.ndarray = np.array([])
 		if videoCapture.isOpened(): rval, frame = videoCapture.read()
-		while rval and endFrameIndex != None and i > endFrameIndex:
-			if i >= startFrameIndex:
-				frames.append(frame)
-			i += 1
+		while rval:
+			frames.append(frame)
 			rval, frame = videoCapture.read()
+		
 		width     : float = videoCapture.get(cv2.CAP_PROP_FRAME_WIDTH)
 		height    : float = videoCapture.get(cv2.CAP_PROP_FRAME_HEIGHT)
 		fps       : float = videoCapture.get(cv2.CAP_PROP_FPS)
-		frameCount: int   = videoCapture.get(cv2.CAP_PROP_FRAME_COUNT)
+		frameCount: int = videoCapture.get(cv2.CAP_PROP_FRAME_COUNT)
 		videoCapture.release()
 		return [frames, width, height, fps, frameCount]
 	
-	def frameIndex(self, sec: float) -> float: 
+	#! 在實例化TVideo時無法用
+	def secToframeIndex(self, sec: float) -> float: 
 		return sec * self.fps
-	
-	# def add(self, frameData: TFrameData):
-	# 	self.framesData.append(frameData)
 
 	def forEach(self, callback: ForEachFrameData):
 		for i in range(0, self.frameCount):
@@ -294,14 +294,24 @@ class TVideo:
 	def addProcess(self, processName: str, callBack: ForEachFrameData):
 		self.process[processName] = callBack
 		return self
-	
-	def runProcess(self):
-		for i in range(0, self.frameCount):
-			print('Frame Index:', i)
-			for processName, func in self.process.items():
-				print('Running: ', processName)
-				self.previousProcessResult = func(self.framesData[i], i)
- 
+
+	def runProcess(self, schedule: Callable[[int, int, int], int], process: ForEachFrameData, maxTimes: Union[int, float] = float('inf')):
+		'''
+		if callbackReturnIntex() return a negative number, will stop this process.
+		'''
+		#!
+		times = 0
+		frameIndex = -1
+		while times < maxTimes:
+			frameIndex = schedule(frameIndex, self.frameCount, times)
+			print('Frame Index:', frameIndex)
+			if frameIndex < 0:
+				print('break')
+				break
+			process(self.framesData[frameIndex], frameIndex)
+			times += 1
+
+	#!
 	def calc(self):
 		for typeName in ['vehicles', 'licensePlates', 'trafficLights']:
 			self.findCorresponding(typeName, len(self.framesData))
@@ -345,6 +355,38 @@ class TVideo:
 			out.write(frameData.frame)
 		out.release()
 
+
+class TVideoSchedule:
+	
+	#檢查返回值有沒有超出frame的範圍，有的話返回-1跳出
+	@staticmethod
+	def checkIndexOutOfRange(resultIndex: int, frameCount: int) -> int:
+		if resultIndex >= frameCount:
+			return -1
+		return resultIndex
+
+	@staticmethod
+	def forEach(previousIndex: int, frameCount: int, times: int) -> int:
+		return TVideoSchedule.checkIndexOutOfRange(previousIndex + 1, frameCount)
+	
+	@staticmethod
+	def forEachInterval(interval: int):
+		def forEach(previousIndex: int, frameCount: int, times: int) -> int:
+			if previousIndex + interval >= frameCount:
+				return -1
+			return previousIndex + interval
+		return forEach
+	
+	# 一開始
+	# 上一次的index
+	# previousIndex = -1
+	# 執行了幾次
+	# times = 0 每次自動加　1
+	# frameCount = 整條影片有多少個frame，恆定
+	@staticmethod
+	def xxx(previousIndex: int, frameCount: int, times: int) -> int:
+		return -1
+
 #!
 def detectResultToTFrameDatas(detectResult: DetectResult) -> Union[List[LicensePlateData], List[TrafficLightData]]:
 	licensePlates = []
@@ -356,32 +398,3 @@ def detectResultToTFrameDatas(detectResult: DetectResult) -> Union[List[LicenseP
 def detectResultsToTVideoData(detectResults: DetectResults) -> List[TFrameData]:
     	...
 
-
-
-class Process:
-	def __init__(self):
-		self.previousProcessResult = ""
-
-	def stop(self):
-		pass
-
-# using
-tVideo = TVideo("video")
-# # 調用self.previousProcessResult來獲得上一個流程的回傳結果
-class Funcs(Process):
-	def process(self):
-		self.yolo()
-		# self.draw()
-
-	def yolo(self):
-		pass
-	
-	def draw(self):
-		pass
-
-
-# def func(frameData):
-# 	frameData.
-
-# tVideo.addProcess('yolo', func=func)
-# tVideo.addProcess('yolo', func='')

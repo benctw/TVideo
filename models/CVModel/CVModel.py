@@ -10,7 +10,7 @@ class CVModel(ABC):
 		self.labels = []
 
 	@staticmethod
-	def getFrames(videoCapture, startFrameIndex = 0, endFrameIndex = None):
+	def getFrames(videoCapture):
 		needRelease = False
 		if type(videoCapture) is str:
 			videoCapture = cv2.VideoCapture(videoCapture)
@@ -18,13 +18,10 @@ class CVModel(ABC):
 		frames = []
 		frame = None
 		rval = False
-		i = 0
 		if videoCapture.isOpened(): 
 			rval, frame = videoCapture.read()
-		while rval and endFrameIndex != None and i > endFrameIndex:
-			if i >= startFrameIndex:
-				frames.append(frame)
-			i += 1
+		while rval:
+			frames.append(frame)
 			rval, frame = videoCapture.read()
 		if needRelease:
 			videoCapture.release()

@@ -1,3 +1,4 @@
+from typing import List, OrderedDict, Tuple, Any, Union, Callable
 import math
 import numpy as np
 import cv2
@@ -73,7 +74,7 @@ def yolo(args):
 	# video 一定要有--save
 	if not args.video is None:
 		detectResults = TP.LPModel.detectVideo(args.video)
-		TP.saveVideo(detectResults.drawBoxes(indexs=detectResults.NMSIndexs), args.save)
+		saveVideo(detectResults.drawBoxes(indexs=detectResults.NMSIndexs), args.save)
 	os._exit(0)
 
 # 執行 resa
@@ -158,7 +159,7 @@ def main():
 	# 	threshold=0.7
 	# )
 
-	TP = TrafficPolice()
+	# TP = TrafficPolice()
 	# image = cv2.imread("D:/chiziSave/image/U20151119083338.jpg")
 	# imshow(image)
 	# detectResult = TP.LPModel.detectImage(image)
@@ -172,7 +173,7 @@ def main():
 	# detectImage = detectResult.drawBoxes(detectResult.NMSIndexs, callbackReturnLPNumber)
 	# imshow(detectImage)
 
-
+	""""""""""""""""""""""""""""""""""""
 	# video 車牌
 	# video = cv2.VideoCapture("D:/下載/違規影片-20210820T200841Z-001/違規影片/04-紅燈越線/越線01-(006-PNG，123403-123406).mp4")
 	# interval = 3
@@ -190,54 +191,79 @@ def main():
 	# TP.saveVideo(resultImages, "D:/下載/result/越線01-(006-PNG，123403-123406).mp4", fps / interval)
 	
 
+	""""""""""""""""""""""""""""""""""""
+	# # video 車牌x
+	# video = cv2.VideoCapture("D:/下載/違規影片-20210820T200841Z-001/違規影片/04-紅燈越線/越線06-(AQF-3736，074106-074111).mp4")
+	# interval = 8
+	# detectResults = TP.LPModel.detectVideo(video, interval)
+	# detectResults.table()
+	# detectResults.setColors([np.array([0, 0, 255]), np.array([255, 0, 0])])
 
-	# video 車牌x
-	video = cv2.VideoCapture("D:/下載/違規影片-20210820T200841Z-001/違規影片/04-紅燈越線/越線06-(AQF-3736，074106-074111).mp4")
-	interval = 8
-	detectResults = TP.LPModel.detectVideo(video, interval)
-	detectResults.table()
-	detectResults.setColors([np.array([0, 0, 255]), np.array([255, 0, 0])])
+	# # detector = cv2.SIFT_create()
+	# # def callbackKeypoints(detectResult, frameIndex, croppedImage, i):
+	# # 	keypoints = detector.detect(croppedImage)
+	# # 	img_keypoints = np.empty((croppedImage.shape[0], croppedImage.shape[1], 3), dtype=np.uint8)
+	# # 	cv2.drawKeypoints(croppedImage, keypoints, img_keypoints)
+	# # 	return  img_keypoints
+	# # resultImages = detectResults.draw(detectResults.NMSIndexs, callbackKeypoints)
 
-	# detector = cv2.SIFT_create()
-	# def callbackKeypoints(detectResult, frameIndex, croppedImage, i):
-	# 	keypoints = detector.detect(croppedImage)
-	# 	img_keypoints = np.empty((croppedImage.shape[0], croppedImage.shape[1], 3), dtype=np.uint8)
-	# 	cv2.drawKeypoints(croppedImage, keypoints, img_keypoints)
-	# 	return  img_keypoints
-	# resultImages = detectResults.draw(detectResults.NMSIndexs, callbackKeypoints)
-
-	def callbackReturnTexts(detectResult, frameIndex, classID, box, confidence, i):
-		# if detectResult.classIDs[i] == 1:
-			# lp = LicensePlateData(detectResult.crop(i), detectResult.boxes[i], detectResult.confidences[i])
-			# print(f'number: {lp.number}')
-			# return lp.number
-		if detectResult.classIDs[i] == 0:
-			tl = TrafficLightData(detectResult.crop(i), detectResult.boxes[i], detectResult.confidences[i])
-			print(f'state: {tl.state.name}')
-			return tl.state.name
-		return None
-	resultImages = detectResults.drawBoxes(detectResults.NMSIndexs, callbackReturnTexts)
+	# def callbackReturnTexts(detectResult, frameIndex, classID, box, confidence, i):
+	# 	# if detectResult.classIDs[i] == 1:
+	# 		# lp = LicensePlateData(detectResult.crop(i), detectResult.boxes[i], detectResult.confidences[i])
+	# 		# print(f'number: {lp.number}')
+	# 		# return lp.number
+	# 	if detectResult.classIDs[i] == 0:
+	# 		tl = TrafficLightData(detectResult.crop(i), detectResult.boxes[i], detectResult.confidences[i])
+	# 		print(f'state: {tl.state.name}')
+	# 		return tl.state.name
+	# 	return None
+	# resultImages = detectResults.drawBoxes(detectResults.NMSIndexs, callbackReturnTexts)
 	
-	for i in range(0, len(detectResults.detectResults)):
-		detectResults.detectResults[i].image = resultImages[i]
+	# for i in range(0, len(detectResults.detectResults)):
+	# 	detectResults.detectResults[i].image = resultImages[i]
 
-	def callbackCroppedImage(detectResult, frameIndex, croppedImage, i):
-		if detectResult.classIDs[i] == 1:
-			# correctedImage, p1, p2, p3, p4 = TP.correct(croppedImage)
-			# number = TrafficPolice.getLPNumber(CVModel.crop(correctedImage, detectResult.boxes[i]))
-			# print(f'number: {number}')
+	# def callbackCroppedImage(detectResult, frameIndex, croppedImage, i):
+	# 	if detectResult.classIDs[i] == 1:
+	# 		# correctedImage, p1, p2, p3, p4 = TP.correct(croppedImage)
+	# 		# number = TrafficPolice.getLPNumber(CVModel.crop(correctedImage, detectResult.boxes[i]))
+	# 		# print(f'number: {number}')
 
-			cornerPoints = LicensePlateData.getCornerPoints(croppedImage)
-			if len(cornerPoints) != 0:
-				cornerPoints = np.array(cornerPoints)
-				cv2.polylines(croppedImage, [cornerPoints], True, (0, 0, 255), 2, cv2.LINE_AA)
-				cv2.line(croppedImage, cornerPoints[0], cornerPoints[2], (0, 255, 0), 2, cv2.LINE_AA)
-				cv2.line(croppedImage, cornerPoints[1], cornerPoints[3], (0, 255, 0), 2, cv2.LINE_AA)
-		return croppedImage
-	resultImages = detectResults.draw(detectResults.NMSIndexs, callbackCroppedImage)
-	fps = video.get(cv2.CAP_PROP_FPS)
-	print('fps: ', fps)
-	saveVideo(resultImages, "D:/下載/result/越線06-(AQF-3736，074106-074111)1.mp4", fps / interval)
+	# 		cornerPoints = LicensePlateData.getCornerPoints(croppedImage)
+	# 		if len(cornerPoints) != 0:
+	# 			cornerPoints = np.array(cornerPoints)
+	# 			cv2.polylines(croppedImage, [cornerPoints], True, (0, 0, 255), 2, cv2.LINE_AA)
+	# 			cv2.line(croppedImage, cornerPoints[0], cornerPoints[2], (0, 255, 0), 2, cv2.LINE_AA)
+	# 			cv2.line(croppedImage, cornerPoints[1], cornerPoints[3], (0, 255, 0), 2, cv2.LINE_AA)
+	# 	return croppedImage
+	# resultImages = detectResults.draw(detectResults.NMSIndexs, callbackCroppedImage)
+	# fps = video.get(cv2.CAP_PROP_FPS)
+	# print('fps: ', fps)
+	# saveVideo(resultImages, "D:/下載/result/越線06-(AQF-3736，074106-074111)1.mp4", fps / interval)
+	
+	""""""""""""""""""""""""""""""""""""
+	TP = TrafficPolice()
+	# 定義處理方法
+	def yoloProcess(frameData: TFrameData, frameIndex: int):
+		detectResult = TP.LPModel.detectImage(frameData.frame)
+		NMSDetectResult = detectResult.getNMSDetectResult()
+		for objIndex, classID in enumerate(NMSDetectResult.classIDs):
+			# 紅綠燈
+			if classID == 0:
+				# 因為label名稱有空格，不能成為class的屬性名稱
+				label = re.sub(r' ', '', NMSDetectResult.labels[classID])
+				frameData.addObj(label, TrafficLightData(NMSDetectResult.crop(objIndex), NMSDetectResult.boxes[objIndex], NMSDetectResult.confidences[objIndex]))
+			# 車牌
+			elif classID == 1:
+				label = re.sub(r' ', '', NMSDetectResult.labels[classID])
+				frameData.addObj(label, LicensePlateData(NMSDetectResult.crop(objIndex), NMSDetectResult.boxes[objIndex], NMSDetectResult.confidences[objIndex]))
+		
+		drawedImage = NMSDetectResult.drawBoxes(NMSDetectResult.AllIndex, NMSDetectResult.msg)
+		frameData.frame = drawedImage
+
+	
+	tVideo = TVideo('D:/chiziSave/違規影片/02-紅燈左轉/左轉08-(NER-5877，180153-180155).mp4')
+	tVideo.runProcess(TVideoSchedule.forEachInterval(1), yoloProcess)
+	tVideo.save('D:/chiziSave/detect-result/左轉08-(NER-5877，180153-180155).mp4')
 
 
 if __name__ == '__main__':
