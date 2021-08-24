@@ -10,6 +10,7 @@ def getColors(lastCodename):
     global colors
     if colors is None:
         colors = np.random.randint(0, 255, size = (lastCodename + 1, 3), dtype = "uint8")
+        colors = [[int(c) for c in color] for color in colors]
     return colors
 
 class Process:
@@ -47,9 +48,9 @@ class Process:
 
         resultImage = frameData.frame
         for licensePlate in frameData.licensePlates:
+            color = colors[licensePlate.codename]
             p1x, p1y, p2x, p2y = licensePlate.box
             # 框
-            color = [int(c) for c in colors[licensePlate.codename]]
             cv2.rectangle(resultImage, (p1x, p1y), (p2x, p2y), color, 2)
             text = '{} {}({:.0f}%)'.format(licensePlate.codename, licensePlate.label, licensePlate.confidence * 100)
             # 字型設定
@@ -67,4 +68,13 @@ class Process:
 
         return ProcessState.next
 
+    @staticmethod
+    def drawPath(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
+        colors = getColors(tvideo.lastCodename)
+        windowStartIndex = frameIndex - 30 if frameIndex - 30 >= 0 else 0
+        framesData: List[TFrameData] = tvideo.framesData[windowStartIndex: frameIndex + 1]
+        for windowIndex, fd in enumerate(framesData):
+            for lp in fd.licensePlates:
+                cv2.circle(frameData.frame, (lp.box[0] + lp.centerPosition[0], lp.box[1] + lp.centerPosition[1]), int((windowIndex + 1) / 5), colors[lp.codename], -1)
+        return ProcessState.next
     

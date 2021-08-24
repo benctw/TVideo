@@ -54,18 +54,18 @@ class LicensePlateData:
 		self.box = box
 		self.confidence = confidence
 		self.label = 'LicensePlate'
-		# self.calc()
+		self.calc()
 	
 	# 生成之後計算的數據
 	def calc(self):
 		# 車牌的四個角點
 		self.cornerPoints  : List = self.getCornerPoints(self.image)
 		# 矯正的圖像
-		self.correctImage  : np.ndarray = self.correct(self.image, self.cornerPoints, int(150 * self.ratioOfLicensePlate), 150)
+		# self.correctImage  : np.ndarray = self.correct(self.image, self.cornerPoints, int(150 * self.ratioOfLicensePlate), 150)
 		# 車牌質心點位置
-		self.centerPosition: List = CVModel.getCenterPosition(self.cornerPoints)
+		self.centerPosition: List[int] = CVModel.getCenterPosition(self.cornerPoints)
 		# 車牌號碼
-		self.number        : str = self.getNumber(self.correctImage)
+		# self.number        : str = self.getNumber(self.correctImage)
 	
 	@staticmethod
 	def getCornerPoints(image: np.ndarray) -> List:
@@ -89,7 +89,7 @@ class LicensePlateData:
 		e = 0
 		approx = cv2.approxPolyDP(maxCnt, e * l, True)
 		while True:
-			e += 0.001
+			e += 0.0001
 			approx = cv2.approxPolyDP(maxCnt, e * l, True)
 			if len(approx) == 4:
 				print(f"e = {e}")

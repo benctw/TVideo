@@ -1,3 +1,4 @@
+from typing import List
 import numpy as np
 import cv2
 from abc import ABC, abstractmethod
@@ -41,7 +42,7 @@ class CVModel(ABC):
 	# 計算任意點數的質心點位置
 	# points: [point]
 	@staticmethod
-	def getCenterPosition(points):
+	def getCenterPosition(points) -> List[int]:
 		l = len(points)
 		cp = []
 		for i in range(0, len(points[0])):
@@ -49,7 +50,7 @@ class CVModel(ABC):
 			for point in points:
 				sum += point[i]
 			cp.append(sum)
-		cp = [c / l for c in cp]
+		cp = [int(c / l) for c in cp]
 		return cp
 	
 	@staticmethod
