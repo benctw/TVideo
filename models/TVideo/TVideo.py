@@ -1,4 +1,3 @@
-import collections
 import re
 from typing import List, OrderedDict, Tuple, Any, Union, Callable
 from enum import Enum
@@ -8,6 +7,7 @@ import cv2
 from rich.progress import track
 
 from models.CVModel.CVModel import CVModel, DetectResult, DetectResults
+from models.TVideo.Process import Process, ProcessState
 
 Point = Tuple[int, int]
 Box = Tuple[Point, Point]
@@ -203,7 +203,7 @@ class TrafficLightData:
 class TFrameData:
 	def __init__(
 		self, 
-		frame                 : Union[np.ndarray], 
+		frame                 : np.ndarray, 
 		# vehicles              : List[VehicleData], 
 		# licensePlates         : List[LicensePlateData], 
 		# trafficLights         : List[TrafficLightData], 
@@ -213,6 +213,7 @@ class TFrameData:
 	):
 		# 圖像
 		self.frame                  = frame
+		self.editedFrame: np.ndarray = frame.copy()
 		# # 載具數據
 		# self.vehicles               = vehicles
 		# # 車牌數據

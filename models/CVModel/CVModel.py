@@ -1,7 +1,6 @@
 import numpy as np
 import cv2
 from abc import ABC, abstractmethod
-from .CVModelError import CVModelErrors, DetectResultErrors
 from rich.progress import track
 
 class CVModel(ABC):

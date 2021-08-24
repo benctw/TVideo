@@ -3,36 +3,39 @@
 ```
 TrafficPolice
 ├─ README.md
+├─ config.py
 ├─ controllers
 │    └─ setting.py
 ├─ main.py
 ├─ models
 │    ├─ CVModel
 │    │    ├─ CVModel.py
-│    │    ├─ CVModelError.py
 │    │    └─ __init__.py
 │    ├─ RESAModel
 │    │    ├─ RESAModel.py
 │    │    └─ __init__.py
-│    ├─ Timeline
-│    │    ├─ Timeline.py
-│    │    ├─ TimelineError.py
+│    ├─ TVideo
+│    │    ├─ Process.py
+│    │    ├─ TFType.py
+│    │    ├─ TVideo.py
 │    │    └─ __init__.py
 │    ├─ YoloModel
 │    │    ├─ YoloModel.py
-│    │    ├─ YoloModelError.py
 │    │    └─ __init__.py
 │    ├─ __init__.py
 │    └─ helper.py
+├─ requirements.txt
 ├─ static
 │    ├─ ico
 │    ├─ img
 │    ├─ model
-│    │    ├─ lp.cfg
-│    │    └─ lp.names
+│    │    ├─ lp.names
+│    │    └─ lp_yolov4.cfg
 │    └─ preset
 │           └─ defaultSetting.json
 ├─ store
+│    ├─ output
+│    │    └─ 1.jpg
 │    └─ settings.json
 └─ views
        └─ lang

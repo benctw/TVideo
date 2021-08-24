@@ -9,6 +9,7 @@ import easyocr
 import Levenshtein
 from rich.progress import track
 
+import config as glo
 from models.CVModel.CVModel import CVModel
 from models.YoloModel.YoloModel import YoloModel
 from models.helper import *
@@ -55,7 +56,7 @@ def buildArgparser():
 # 執行 detect
 def detect(args):
 	print("detect")
-	TrafficPolice().process()
+	TrafficPolice()
 	os._exit(0)
 
 #!
@@ -96,21 +97,8 @@ class TrafficPolice:
 		return cls.instance
 	
 	def __init__(self):
-		#!!
-		__dirname = os.path.dirname(os.path.abspath(__file__))
-
-		self.LPModel = YoloModel(
-			namesPath   = __dirname + "/static/model/lp.names",
-			configPath  = __dirname + "/static/model/lp_yolov4.cfg",
-			# weightsPath = __dirname + "/static/model/lp_yolov4_final.weights"
-			weightsPath = "D:/chiziSave/TrafficPoliceYoloModel/model/lp_yolov4_final.weights"
-		)
+		self.LPModel = glo.LPModel
 		self.targetLPNumber = ""
-
-	def process(self):
-		pass
-
-	#//////// 共同 ////////#
 
 	# 更新裁剪的時間點
 	def updataMarkPoint(self, start, end):
@@ -244,7 +232,7 @@ def main():
 	TP = TrafficPolice()
 	# 定義處理方法
 	def yoloProcess(frameData: TFrameData, frameIndex: int) -> ProcessState:
-		detectResult = TP.LPModel.detectImage(frameData.frame)
+		detectResult = glo.LPModel.detectImage(frameData.frame)
 		NMSDetectResult = detectResult.getNMSDetectResult()
 		for objIndex, classID in enumerate(NMSDetectResult.classIDs):
 			# 紅綠燈
