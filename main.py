@@ -228,7 +228,7 @@ def main():
 	tVideo.runProcess(TVideoSchedule.forEach, Process.yolo)
 	tVideo.runProcess(TVideoSchedule.forEach, Process.findCorrespondingLicensePlate)
 	tVideo.runProcess(TVideoSchedule.forEach, Process.drawBoxesLicensePlate)
-	tVideo.save('D:/chiziSave/detect-result/直行08-(XS5-327，182607-182609)10.mp4')
+	tVideo.save('D:/chiziSave/detect-result/直行08-(XS5-327，182607-182609)13.mp4')
 
 
 if __name__ == '__main__':

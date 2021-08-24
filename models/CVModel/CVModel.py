@@ -52,6 +52,10 @@ class CVModel(ABC):
 		cp = [c / l for c in cp]
 		return cp
 	
+	@staticmethod
+	def boxArea(box):
+		return (box[0] - box[2]) * (box[1] - box[3])
+
 	# 計算兩個矩形的IoU
 	# rect: [p1x, p1y, p2x, p2y]
 	@staticmethod
@@ -59,15 +63,20 @@ class CVModel(ABC):
 		r1p1x, r1p1y, r1p2x, r1p2y = rect1
 		r2p1x, r2p1y, r2p2x, r2p2y = rect2
 
-		iouP1 = [max(r1p1x, r2p1x), max(r1p1y, r2p1y)]
-		iouP2 = [min(r1p2x, r2p2x), min(r1p2y, r2p2y)]
+		if r1p1x > r2p2x: return 0.0
+		if r1p1y > r2p2y: return 0.0
+		if r1p2x < r2p1x: return 0.0
+		if r1p2y < r2p1y: return 0.0
+
+		ip1x, ip1y = [max(r1p1x, r2p1x), max(r1p1y, r2p1y)]
+		ip2x, ip2y = [min(r1p2x, r2p2x), min(r1p2y, r2p2y)]
 		
 		# 交集面積
-		iouArea = (iouP2[0] - iouP1[0]) * (iouP2[1] - iouP1[1])
-		# 聯集面積 = rect1面積 + rect2面積 - iou面積
-		allArea = (r1p2x - r1p1x) * (r1p2y - r1p1y) + (r2p2x - r2p1x) * (r2p2y - r2p1y) - iouArea
+		intersectionArea = (ip2x - ip1x) * (ip2y - ip1y)
+		# 聯集面積 = rect1面積 + rect2面積 - 交集面積
+		unionArea = (r1p2x - r1p1x) * (r1p2y - r1p1y) + (r2p2x - r2p1x) * (r2p2y - r2p1y) - intersectionArea
 		# IoU =  面積交集 / 面積聯集
-		return iouArea / allArea
+		return intersectionArea / unionArea
 	
 	@staticmethod
 	def crop(image, box):

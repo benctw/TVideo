@@ -2,6 +2,7 @@ from models.YoloModel.YoloModel import *
 from models.CVModel.CVModel import *
 from models.TVideo.TVideo import *
 from config import *
+from rich.progress import track
 
 #!
 colors = None
@@ -18,7 +19,7 @@ class Process:
         print('--> Yolo Process')
         boxes, classIDs, confidences = LPModel.detect(frameData.frame)
 
-        for objIndex, classID in enumerate(classIDs):
+        for objIndex, classID in enumerate(track(classIDs, 'Add data')):
             box = boxes[objIndex]
             confidence = confidences[objIndex]
             # 紅綠燈
@@ -36,12 +37,12 @@ class Process:
     @staticmethod
     def findCorrespondingLicensePlate(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
         print('--> Find Corresponding License Plate Process')
-        tvideo.findCorresponding('licensePlates', frameIndex, 0.01)
+        tvideo.findCorresponding('licensePlates', frameIndex, 0)
         return ProcessState.next
 
     @staticmethod
     def drawBoxesLicensePlate(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
-        print('--> Draw Boxes License Plate')
+        # print('--> Draw Boxes License Plate')
         colors = getColors(tvideo.lastCodename)
 
         resultImage = frameData.frame

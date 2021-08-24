@@ -23,7 +23,7 @@ class VehicleData:
 		self.box = box
 		self.confidence = confidence
 		self.label = 'Vehicle'
-		self.calc()
+		# self.calc()
 
 	# 生成之後計算的數據
 	def calc(self):
@@ -164,7 +164,7 @@ class TrafficLightData:
 	
 	def calc(self):
 		# 紅綠燈狀態
-		self.state: TrafficLightState = self.getTrafficLightColor(self.image)
+		self.state: TrafficLightState = self.ColorDectect(self.image, *self.getTrafficLightColor(self.image))
 	
 	@staticmethod
 	def getTrafficLightColor(image: np.ndarray) -> List[int]:
@@ -241,8 +241,8 @@ class TFrameData:
 	):
 		# 圖像
 		self.frame                  = frame
-		self.editedFrame: np.ndarray = frame.copy()
-		self.temp: Any = ''
+		# self.editedFrame: np.ndarray = frame.copy()
+		# self.temp: Any = ''
 		# self.objs: List[List[Any]] = [
 		# 	# 載具數據
 		# 	[],
@@ -299,7 +299,7 @@ class TVideo:
 		self.frameCount: int   = videoDetails[4]
 
 		# 多幀數據（從 video 初始化）
-		self.framesData: List[TFrameData] = [TFrameData(frame) for frame in self.frames]
+		self.framesData: List[TFrameData] = [TFrameData(frame) for frame in track(self.frames, '初始化每幀數據')]
 		# 最後使用的代號
 		self.lastCodename = lastCodename
 
@@ -318,15 +318,19 @@ class TVideo:
 		frames: List[np.ndarray] = []
 		rval = False
 		frame: np.ndarray = np.array([])
-		if videoCapture.isOpened(): rval, frame = videoCapture.read()
-		while rval:
-			frames.append(frame)
-			rval, frame = videoCapture.read()
+		frameCount: int = int(videoCapture.get(cv2.CAP_PROP_FRAME_COUNT))
+		if videoCapture.isOpened():
+			for _ in track(range(0, frameCount), '讀取影片'):
+				rval, frame = videoCapture.read()
+				frames.append(frame)
+
+		# while rval:
+		# 	frames.append(frame)
+		# 	rval, frame = videoCapture.read()
 		
 		width     : float = videoCapture.get(cv2.CAP_PROP_FRAME_WIDTH)
 		height    : float = videoCapture.get(cv2.CAP_PROP_FRAME_HEIGHT)
 		fps       : float = videoCapture.get(cv2.CAP_PROP_FPS)
-		frameCount: int = videoCapture.get(cv2.CAP_PROP_FRAME_COUNT)
 		videoCapture.release()
 		return [frames, width, height, fps, frameCount]
 
@@ -341,7 +345,7 @@ class TVideo:
 		frameIndex = -1
 		# 有限
 		if not maxTimes is None:
-			for times in track(range(0, maxTimes)):
+			for times in track(range(0, maxTimes), "run process"):
 				frameIndex = schedule(frameIndex, self.frameCount, times)
 				print('Frame Index:', frameIndex)
 				if frameIndex < 0:
@@ -371,30 +375,28 @@ class TVideo:
 			self.findCorresponding(typeName, len(self.framesData))
 
 	#! 應該要寫成staticmethod
-	def findCorresponding(self, typeName: str, frameIndex: int, threshold: float = 0.2):
+	def findCorresponding(self, typeName: str, frameIndex: int, threshold: float = 0.1):
 		# 跟前一幀比
+		frameData2 = self.framesData[frameIndex]
+		objs2 = getattr(frameData2, typeName)
 		objs1 = []
-		if frameIndex > 0:
-			frameData1, frameData2 = self.framesData[frameIndex - 1 : frameIndex + 1]
+		if frameIndex != 0:
+			frameData1 = self.framesData[frameIndex - 1]
 			objs1 = getattr(frameData1, typeName)
-			objs2 = getattr(frameData2, typeName)
-		else: 
-			frameData2 = self.framesData[frameIndex]
-			objs2 = getattr(frameData2, typeName)
 		
-		IoUs = []
 		for i, obj2 in enumerate(objs2):
-			IoUs.clear()
+			IoUs = []
 			for obj1 in objs1:
 				IoUs.append(CVModel.IoU(obj2.box, obj1.box))
 			
+			# 完全沒對應
 			if len(IoUs) == 0:
 				objs2[i].codename = self.newCodename()
 			else:
 				# 對應前一幀的 box
 				maxIndex = np.argmax(IoUs)
 				# 小於閥值 或 對應的沒有 codename，給新 codename
-				if IoUs[maxIndex] < threshold or not hasattr(objs1[maxIndex], 'codename'):
+				if IoUs[maxIndex] <= threshold or not hasattr(objs1[maxIndex], 'codename'):
 					objs2[i].codename = self.newCodename()
 				else:
 					objs2[i].codename = objs1[maxIndex].codename
@@ -437,9 +439,7 @@ class TVideoSchedule:
 	@staticmethod
 	def forEachInterval(interval: int):
 		def forEach(previousIndex: int, frameCount: int, times: int) -> int:
-			if previousIndex + interval >= frameCount:
-				return -1
-			return previousIndex + interval
+			return TVideoSchedule.checkIndexOutOfRange(previousIndex + interval, frameCount)
 		return forEach
 	
 	# 一開始
