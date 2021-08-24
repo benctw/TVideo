@@ -53,16 +53,19 @@ class CVModel(ABC):
 		return cp
 	
 	# 計算兩個矩形的IoU
-	# rect: [p1, p2]
-	# p1: [x, y]
+	# rect: [p1x, p1y, p2x, p2y]
 	@staticmethod
 	def IoU(rect1, rect2):
-		iouP1 = [max(rect1[0][0], rect2[0][0]), max(rect1[0][1], rect2[0][1])]
-		iouP2 = [min(rect1[1][0], rect2[1][0]), min(rect1[1][1], rect2[1][1])]
+		r1p1x, r1p1y, r1p2x, r1p2y = rect1
+		r2p1x, r2p1y, r2p2x, r2p2y = rect2
+
+		iouP1 = [max(r1p1x, r2p1x), max(r1p1y, r2p1y)]
+		iouP2 = [min(r1p2x, r2p2x), min(r1p2y, r2p2y)]
+		
 		# 交集面積
 		iouArea = (iouP2[0] - iouP1[0]) * (iouP2[1] - iouP1[1])
 		# 聯集面積 = rect1面積 + rect2面積 - iou面積
-		allArea = (rect1[1][0] - rect1[0][0]) * (rect1[1][1] - rect1[0][1]) + (rect2[1][0]-rect2[0][0]) * (rect2[1][1]-rect2[0][1]) - iouArea
+		allArea = (r1p2x - r1p1x) * (r1p2y - r1p1y) + (r2p2x - r2p1x) * (r2p2y - r2p1y) - iouArea
 		# IoU =  面積交集 / 面積聯集
 		return iouArea / allArea
 	
@@ -70,6 +73,17 @@ class CVModel(ABC):
 	def crop(image, box):
 		croppedImage = image.copy()
 		return croppedImage[box[1]:box[3], box[0]:box[2]]
+
+	#過曝處理
+	@staticmethod
+	def OverexPose(image):
+		Overexpose = image.copy()
+		equalizeOver = np.zeros(Overexpose.shape, Overexpose.dtype)
+		equalizeOver[:, :, 0] = cv2.equalizeHist(Overexpose[:, :, 0])
+		equalizeOver[:, :, 1] = cv2.equalizeHist(Overexpose[:, :, 1])
+		equalizeOver[:, :, 2] = cv2.equalizeHist(Overexpose[:, :, 2])
+		return equalizeOver
+
 
 ### 改成只針對yolo的結果
 class DetectResult:
@@ -191,7 +205,7 @@ class DetectResult:
 			# 附帶的字
 			text = callbackReturnText(self.classIDs[i], self.boxes[i], self.confidences[i], i)
 			# 如果沒有信息不繪畫字
-			if text == None:
+			if text is None:
 				return resultImage
 			# 字型設定
 			font = cv2.FONT_HERSHEY_COMPLEX

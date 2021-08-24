@@ -5,18 +5,13 @@ import cv2
 import os
 import sys
 import argparse
-import easyocr
 import Levenshtein
 from rich.progress import track
 
 import config as glo
-from models.CVModel.CVModel import CVModel
-from models.YoloModel.YoloModel import YoloModel
 from models.helper import *
 from models.TVideo.TVideo import *
-
-#!!
-__dirname = os.path.dirname(os.path.abspath(__file__))
+from models.TVideo.Process import *
 
 
 def buildArgparser():
@@ -229,33 +224,11 @@ def main():
 	# saveVideo(resultImages, "D:/下載/result/越線06-(AQF-3736，074106-074111)1.mp4", fps / interval)
 	
 	""""""""""""""""""""""""""""""""""""
-	TP = TrafficPolice()
-	# 定義處理方法
-	def yoloProcess(frameData: TFrameData, frameIndex: int) -> ProcessState:
-		detectResult = glo.LPModel.detectImage(frameData.frame)
-		NMSDetectResult = detectResult.getNMSDetectResult()
-		for objIndex, classID in enumerate(NMSDetectResult.classIDs):
-			# 紅綠燈
-			if classID == 0:
-				# 因為label名稱有空格，不能成為class的屬性名稱
-				label = re.sub(r' ', '', NMSDetectResult.labels[classID])
-				frameData.addObj(label, TrafficLightData(NMSDetectResult.crop(objIndex), NMSDetectResult.boxes[objIndex], NMSDetectResult.confidences[objIndex]))
-			# 車牌
-			elif classID == 1:
-				label = re.sub(r' ', '', NMSDetectResult.labels[classID])
-				frameData.addObj(label, LicensePlateData(NMSDetectResult.crop(objIndex), NMSDetectResult.boxes[objIndex], NMSDetectResult.confidences[objIndex]))
-		
-		drawedImage = NMSDetectResult.drawBoxes(NMSDetectResult.AllIndex, NMSDetectResult.msg)
-		frameData.frame = drawedImage
-		return ProcessState.next
-
-	def xxProcess(frameData: TFrameData, frameIndex: int) -> ProcessState:
-		...
-		return ProcessState.next
-	
-	tVideo = TVideo('D:/chiziSave/違規影片/02-紅燈左轉/左轉08-(NER-5877，180153-180155).mp4')
-	tVideo.runProcess(TVideoSchedule.forEachInterval(1), yoloProcess)
-	tVideo.save('D:/chiziSave/detect-result/左轉08-(NER-5877，180153-180155).mp4')
+	tVideo = TVideo('D:/chiziSave/違規影片/03-紅燈直行/直行08-(XS5-327，182607-182609).mp4')
+	tVideo.runProcess(TVideoSchedule.forEach, Process.yolo)
+	tVideo.runProcess(TVideoSchedule.forEach, Process.findCorrespondingLicensePlate)
+	tVideo.runProcess(TVideoSchedule.forEach, Process.drawBoxesLicensePlate)
+	tVideo.save('D:/chiziSave/detect-result/直行08-(XS5-327，182607-182609)10.mp4')
 
 
 if __name__ == '__main__':

@@ -1,7 +1,7 @@
-from typing import List, Tuple, Any, Union, Callable
+from typing import List, Tuple
 import numpy as np
 import cv2
-from ..CVModel.CVModel import CVModel, DetectResult
+from ..CVModel.CVModel import CVModel
 import config as glo
 
 # 應該做成抽象對象，被繼承
@@ -50,10 +50,10 @@ class YoloModel(CVModel):
 		self.net.setInput(blob)
 		layerOutputs = self.net.forward(self.outputLayerNames)
 		
-		boxes: List[List[int]] = []
-		classIDs: List[int] = []
+		boxes      : List[List[int]] = []
+		classIDs   : List[int] = []
 		confidences: List[float] = []
-		NMSIndexs: List[int] = []
+		NMSIndexs  : List[int] = []
 
 		for output in layerOutputs:
 			for detection in output:
@@ -75,29 +75,32 @@ class YoloModel(CVModel):
 			classIDs = [classIDs[i] for i in NMSIndexs]
 			confidences = [confidences[i] for i in NMSIndexs]
 
+		# 不知道為什麼 box 的點會負數，消掉負數
+		boxes = [[max(0, b) for b in box] for box in boxes]
+
 		return boxes, classIDs, confidences
 
-	def detectImage(self, image: np.ndarray) -> DetectResult:
-		if type(image) is str:
-			image = cv2.imread(image)
-		result = DetectResult(image, self.labels, self.threshold, self.confidence)
-		( H, W ) = image.shape[:2]
-		blob = cv2.dnn.blobFromImage(image, 1 / 255, (416, 416), swapRB = True, crop = False)
-		self.net.setInput(blob)
-		layerOutputs = self.net.forward(self.outputLayerNames)
+	# def detectImage(self, image: np.ndarray) -> DetectResult:
+	# 	if type(image) is str:
+	# 		image = cv2.imread(image)
+	# 	result = DetectResult(image, self.labels, self.threshold, self.confidence)
+	# 	( H, W ) = image.shape[:2]
+	# 	blob = cv2.dnn.blobFromImage(image, 1 / 255, (416, 416), swapRB = True, crop = False)
+	# 	self.net.setInput(blob)
+	# 	layerOutputs = self.net.forward(self.outputLayerNames)
 		
-		for output in layerOutputs:
-			for detection in output:
-				# detection 前4個是box中心點坐標(x, y)和寬高(w, h)，按比例，像txt標注檔數據
-				scores = detection[5:]
-				# 找出得分最大的 index
-				classID = np.argmax(scores)
-				confidence = scores[classID]
-				if confidence > self.minConfidence:
-					box = detection[0 : 4] * np.array([W, H, W, H])
-					result.add(classID, self.yoloFormatToTwoPoint(*box.astype(int)), float(confidence))
-		result.calcNMS()
-		return result
+	# 	for output in layerOutputs:
+	# 		for detection in output:
+	# 			# detection 前4個是box中心點坐標(x, y)和寬高(w, h)，按比例，像txt標注檔數據
+	# 			scores = detection[5:]
+	# 			# 找出得分最大的 index
+	# 			classID = np.argmax(scores)
+	# 			confidence = scores[classID]
+	# 			if confidence > self.minConfidence:
+	# 				box = detection[0 : 4] * np.array([W, H, W, H])
+	# 				result.add(classID, self.yoloFormatToTwoPoint(*box.astype(int)), float(confidence))
+	# 	result.calcNMS()
+	# 	return result
 	
 	def showConfig(self):
 		...

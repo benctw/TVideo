@@ -1,5 +1,5 @@
 import re
-from typing import List, OrderedDict, Tuple, Any, Union, Callable
+from typing import List, Tuple, Any, Union, Callable
 from enum import Enum
 import easyocr
 import numpy as np
@@ -7,7 +7,6 @@ import cv2
 from rich.progress import track
 
 from models.CVModel.CVModel import CVModel, DetectResult, DetectResults
-from models.TVideo.Process import Process, ProcessState
 
 Point = Tuple[int, int]
 Box = Tuple[Point, Point]
@@ -23,6 +22,7 @@ class VehicleData:
 		self.image = image
 		self.box = box
 		self.confidence = confidence
+		self.label = 'Vehicle'
 		self.calc()
 
 	# 生成之後計算的數據
@@ -53,7 +53,8 @@ class LicensePlateData:
 		self.image = image
 		self.box = box
 		self.confidence = confidence
-		self.calc()
+		self.label = 'LicensePlate'
+		# self.calc()
 	
 	# 生成之後計算的數據
 	def calc(self):
@@ -158,14 +159,15 @@ class TrafficLightData:
 		self.image = image
 		self.box = box
 		self.confidence = confidence
-		self.calc()
+		self.label = 'TrafficLight'
+		# self.calc()
 	
 	def calc(self):
 		# 紅綠燈狀態
-		self.state: TrafficLightState = self.getState(self.image)
+		self.state: TrafficLightState = self.getTrafficLightColor(self.image)
 	
 	@staticmethod
-	def getState(image: np.ndarray) -> TrafficLightState:
+	def getTrafficLightColor(image: np.ndarray) -> List[int]:
 		hsvImg = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 		# min and max HSV values
 		redMin  = np.array([0, 5, 150])
@@ -189,14 +191,40 @@ class TrafficLightData:
 
 		red    = cv2.countNonZero(redBlur)
 		yellow = cv2.countNonZero(yellowBlur)
-		green  = cv2.countNonZero(greenBlur)
+		green  = cv2.countNonZero(greenBlur)	
+		
+		return [red, yellow, green]
+		
+		# if lightColor > 60:
+    	# 		if lightColor == red: return TrafficLightState.red
+		# 	elif lightColor == yellow: return TrafficLightState.yellow
+		# 	elif lightColor == green: return TrafficLightState.green
+		# else:
+		# 	image = CVModel.OverexPose(image)
+		
+		# return TrafficLightState.unknow
 
+	@staticmethod
+	def ColorDectect(image: np.ndarray, red: int, yellow: int, green: int) -> TrafficLightState:
 		lightColor = max(red, yellow, green)
-
-		if lightColor > 60:
+		if lightColor >= 20:
 			if lightColor == red: return TrafficLightState.red
 			elif lightColor == yellow: return TrafficLightState.yellow
 			elif lightColor == green: return TrafficLightState.green
+		elif lightColor < 20:
+			image = CVModel.OverexPose(image)
+			overexpose = image.copy()
+			equalizeOver = np.zeros(overexpose.shape, overexpose.dtype)
+			equalizeOver[:, :, 0] = cv2.equalizeHist(overexpose[:, :, 0])
+			equalizeOver[:, :, 1] = cv2.equalizeHist(overexpose[:, :, 1])
+			equalizeOver[:, :, 2] = cv2.equalizeHist(overexpose[:, :, 2])
+			overexposeColor = TrafficLightData.getTrafficLightColor(overexpose)
+			lightColor = max(*overexposeColor)
+			if lightColor >= 20:
+				if overexposeColor[0] == red: return TrafficLightState.red
+				elif overexposeColor[1] == yellow: return TrafficLightState.yellow
+				elif overexposeColor[2] == green: return TrafficLightState.green
+		
 		return TrafficLightState.unknow
 
 # 一幀的數據
@@ -214,12 +242,21 @@ class TFrameData:
 		# 圖像
 		self.frame                  = frame
 		self.editedFrame: np.ndarray = frame.copy()
-		# # 載具數據
-		# self.vehicles               = vehicles
-		# # 車牌數據
-		# self.licensePlates          = licensePlates
-		# # 紅綠燈數據
-		# self.trafficLights          = trafficLights
+		self.temp: Any = ''
+		# self.objs: List[List[Any]] = [
+		# 	# 載具數據
+		# 	[],
+		# 	# 車牌數據
+		# 	[],
+		# 	# 紅綠燈數據
+		# 	[]
+		# ]
+		# 載具數據
+		self.vehicles: List[VehicleData] = []
+		# 車牌數據
+		self.licensePlates: List[LicensePlateData] = []
+		# 紅綠燈數據
+		self.trafficLights: List[TrafficLightData] = [] 
 		# # 有沒有紅綠燈
 		# self.hasTrafficLight        = hasTrafficLight
 		# # 有沒有車牌
@@ -231,8 +268,8 @@ class TFrameData:
 		if hasattr(self, className):
 			# setattr(self, className, getattr(self, className, [data]))
 			attr = getattr(self, className)
-			#! 不知道為什麼會有None
-			if attr == None:
+			#! 不知道為什麼會有 None
+			if attr is None:
 				attr = []
 			setattr(self, className, attr.append(data))
 		else:
@@ -243,7 +280,7 @@ class ProcessState(Enum):
 	next = 1
 	stop = 2
 
-ForEachFrameData = Callable[[TFrameData, int], ProcessState]
+ForEachFrameData = Callable[[TFrameData, int, Any], ProcessState]
 
 # 一影片的數據
 class TVideo:
@@ -265,6 +302,11 @@ class TVideo:
 		self.framesData: List[TFrameData] = [TFrameData(frame) for frame in self.frames]
 		# 最後使用的代號
 		self.lastCodename = lastCodename
+
+		# 裁剪影片的開始
+		self.start: int = 0
+		# 裁剪影片的結束，-1 是最後
+		self.end: int = -1
 		# # 每幀會處理的流程 #! 沒有用到
 		# self.process: OrderedDict[str, ForEachFrameData] = collections.OrderedDict()
 		# # 上一個流程返回的結果 #! 沒有用到
@@ -290,7 +332,7 @@ class TVideo:
 
 	def forEach(self, callback: ForEachFrameData):
 		for i in range(0, self.frameCount):
-			callback(self.framesData[i], i)
+			callback(self.framesData[i], i, self)
 
 	def runProcess(self, schedule: Callable[[int, int, int], int], process: ForEachFrameData, maxTimes: int = None):
 		'''
@@ -298,14 +340,14 @@ class TVideo:
 		'''
 		frameIndex = -1
 		# 有限
-		if maxTimes != None:
+		if not maxTimes is None:
 			for times in track(range(0, maxTimes)):
 				frameIndex = schedule(frameIndex, self.frameCount, times)
 				print('Frame Index:', frameIndex)
 				if frameIndex < 0:
 					print('break')
 					break
-				isBreak = process(self.framesData[frameIndex], frameIndex)
+				isBreak = process(self.framesData[frameIndex], frameIndex, self)
 				if isBreak == ProcessState.stop:
 					break
 		# 無限
@@ -317,7 +359,7 @@ class TVideo:
 				if frameIndex < 0:
 					print('break')
 					break
-				isBreak = process(self.framesData[frameIndex], frameIndex)
+				isBreak = process(self.framesData[frameIndex], frameIndex, self)
 				if isBreak == ProcessState.stop:
 					break
 				times += 1
@@ -328,23 +370,34 @@ class TVideo:
 		for typeName in ['vehicles', 'licensePlates', 'trafficLights']:
 			self.findCorresponding(typeName, len(self.framesData))
 
-	#!
-	def findCorresponding(self, typeName: str, frameIndex: int, threshold: float = 0.9):
+	#! 應該要寫成staticmethod
+	def findCorresponding(self, typeName: str, frameIndex: int, threshold: float = 0.2):
 		# 跟前一幀比
-		frameData1, frameData2 = self.framesData[frameIndex - 1 : frameIndex]
-		objs1 = getattr(frameData1, typeName)
-		objs2 = getattr(frameData2, typeName)
+		objs1 = []
+		if frameIndex > 0:
+			frameData1, frameData2 = self.framesData[frameIndex - 1 : frameIndex + 1]
+			objs1 = getattr(frameData1, typeName)
+			objs2 = getattr(frameData2, typeName)
+		else: 
+			frameData2 = self.framesData[frameIndex]
+			objs2 = getattr(frameData2, typeName)
+		
+		IoUs = []
 		for i, obj2 in enumerate(objs2):
-			IoUs = []
+			IoUs.clear()
 			for obj1 in objs1:
 				IoUs.append(CVModel.IoU(obj2.box, obj1.box))
-			# 對應前一幀的box
-			maxIndex = np.argmax(IoUs)
-			# 小於閥值 或 對應的沒有 codename，給新 codename
-			if IoUs[maxIndex] < threshold or not hasattr(objs1[maxIndex], 'codename'):
-				objs2[maxIndex].codename = self.newCodename()
+			
+			if len(IoUs) == 0:
+				objs2[i].codename = self.newCodename()
 			else:
-				objs2[i].codename = objs1[maxIndex].codename
+				# 對應前一幀的 box
+				maxIndex = np.argmax(IoUs)
+				# 小於閥值 或 對應的沒有 codename，給新 codename
+				if IoUs[maxIndex] < threshold or not hasattr(objs1[maxIndex], 'codename'):
+					objs2[i].codename = self.newCodename()
+				else:
+					objs2[i].codename = objs1[maxIndex].codename
 
 	def newCodename(self) -> int:
 		self.lastCodename += 1
