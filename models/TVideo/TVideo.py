@@ -11,6 +11,20 @@ from models.CVModel.CVModel import CVModel, DetectResult, DetectResults
 Point = Tuple[int, int]
 Box = Tuple[Point, Point]
 
+from abc import ABC, abstractmethod
+class TObject(ABC):
+	def __init__(
+		self,
+		image: np.ndarray, 
+		box  : List,
+		confidence: float
+	):
+		self.image = image
+		self.box = box
+		self.confidence = confidence
+		self.label = 'Undefined'
+
+
 # 一載具的數據
 class VehicleData:
 	def __init__(
@@ -29,7 +43,7 @@ class VehicleData:
 	def calc(self):
 		self.cornerPoints = ...
 		# 載具質心點位置
-		self.centerPosition: List = CVModel.getCenterPosition(self.cornerPoints)
+		self.centerPosition: List = []
 		# 方向
 		# self.direction = direction
 		# 下一時刻可能的位置
@@ -338,15 +352,17 @@ class TVideo:
 		for i in range(0, self.frameCount):
 			callback(self.framesData[i], i, self)
 
-	def runProcess(self, schedule: Callable[[int, int, int], int], process: ForEachFrameData, maxTimes: int = None):
+	def runProcess(self, schedule: Callable[[List[int], int], int], process: ForEachFrameData, maxTimes: int = None):
 		'''
 		if callbackReturnIntex() return a negative number, will stop this process.
 		'''
+		indexs: List[int] = []
 		frameIndex = -1
 		# 有限
 		if not maxTimes is None:
 			for times in track(range(0, maxTimes), "run process"):
-				frameIndex = schedule(frameIndex, self.frameCount, times)
+				frameIndex = schedule(indexs, self.frameCount)
+				indexs.append(frameIndex)
 				print('Frame Index:', frameIndex)
 				if frameIndex < 0:
 					print('break')
@@ -358,7 +374,8 @@ class TVideo:
 		else:
 			times = 0
 			while True:
-				frameIndex = schedule(frameIndex, self.frameCount, times)
+				frameIndex = schedule(indexs, self.frameCount)
+				indexs.append(frameIndex)
 				print('Frame Index:', frameIndex)
 				if frameIndex < 0:
 					print('break')
@@ -425,6 +442,10 @@ class TVideo:
 
 class TVideoSchedule:
 	
+	@staticmethod
+	def sample(indexs: List[int], frameCount: int) -> int:
+		...
+	
 	#檢查返回值有沒有超出frame的範圍，有的話返回-1跳出
 	@staticmethod
 	def checkIndexOutOfRange(resultIndex: int, frameCount: int) -> int:
@@ -433,24 +454,22 @@ class TVideoSchedule:
 		return resultIndex
 
 	@staticmethod
-	def forEach(previousIndex: int, frameCount: int, times: int) -> int:
-		return TVideoSchedule.checkIndexOutOfRange(previousIndex + 1, frameCount)
+	def forEach(indexs: List[int], frameCount: int) -> int:
+		return TVideoSchedule.checkIndexOutOfRange(indexs[-1] + 1, frameCount)
 	
 	@staticmethod
 	def forEachInterval(interval: int):
-		def forEach(previousIndex: int, frameCount: int, times: int) -> int:
-			return TVideoSchedule.checkIndexOutOfRange(previousIndex + interval, frameCount)
+		def forEach(indexs: List[int], frameCount: int) -> int:
+			return TVideoSchedule.checkIndexOutOfRange(indexs[-1] + interval, frameCount)
 		return forEach
 	
-	# 一開始
-	# 上一次的index
-	# previousIndex = -1
-	# 執行了幾次
-	# times = 0 每次自動加　1
-	# frameCount = 整條影片有多少個frame，恆定
+	#!
 	@staticmethod
-	def xxx(previousIndex: int, frameCount: int, times: int) -> int:
+	def binarySearch(indexs: List[int], frameCount: int) -> int:
+		if len(indexs) == 0:
+			previousIndex = int(frameCount / 2)
 		return -1
+
 
 #!
 def detectResultToTFrameDatas(detectResult: DetectResult) -> Union[List[LicensePlateData], List[TrafficLightData]]:

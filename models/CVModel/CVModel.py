@@ -10,7 +10,7 @@ class CVModel(ABC):
 		self.labels = []
 
 	@staticmethod
-	def getFrames(videoCapture):
+	def getFrames(videoCapture: cv2.VideoCapture) -> List[np.ndarray]:
 		needRelease = False
 		if type(videoCapture) is str:
 			videoCapture = cv2.VideoCapture(videoCapture)
@@ -28,11 +28,11 @@ class CVModel(ABC):
 		return frames
 
 	@abstractmethod
-	def detectImage(self, image):
+	def detectImage(self, image: np.ndarray):
 		raise NotImplemented
 
 	# 根據 interval 的間隔遍歷一遍影片的幀
-	def detectVideo(self, videoCapture, interval = 1):
+	def detectVideo(self, videoCapture: cv2.VideoCapture, interval: int = 1):
 		results = DetectResults(self.labels)
 		self.images = self.getFrames(videoCapture)
 		for image in track(self.images[::interval], "detecting"):
@@ -42,7 +42,7 @@ class CVModel(ABC):
 	# 計算任意點數的質心點位置
 	# points: [point]
 	@staticmethod
-	def getCenterPosition(points) -> List[int]:
+	def getCenterPosition(points: List[List[int]]) -> List[int]:
 		l = len(points)
 		cp = []
 		for i in range(0, len(points[0])):
@@ -54,13 +54,13 @@ class CVModel(ABC):
 		return cp
 	
 	@staticmethod
-	def boxArea(box):
+	def boxArea(box: List[int]) -> float:
 		return (box[0] - box[2]) * (box[1] - box[3])
 
 	# 計算兩個矩形的IoU
 	# rect: [p1x, p1y, p2x, p2y]
 	@staticmethod
-	def IoU(rect1, rect2):
+	def IoU(rect1: List[int], rect2: List[int]) -> float:
 		r1p1x, r1p1y, r1p2x, r1p2y = rect1
 		r2p1x, r2p1y, r2p2x, r2p2y = rect2
 
@@ -80,13 +80,13 @@ class CVModel(ABC):
 		return intersectionArea / unionArea
 	
 	@staticmethod
-	def crop(image, box):
+	def crop(image: np.ndarray, box: List[int]) -> np.ndarray:
 		croppedImage = image.copy()
 		return croppedImage[box[1]:box[3], box[0]:box[2]]
 
 	#過曝處理
 	@staticmethod
-	def OverexPose(image):
+	def OverexPose(image: np.ndarray) -> np.ndarray:
 		Overexpose = image.copy()
 		equalizeOver = np.zeros(Overexpose.shape, Overexpose.dtype)
 		equalizeOver[:, :, 0] = cv2.equalizeHist(Overexpose[:, :, 0])
@@ -97,16 +97,23 @@ class CVModel(ABC):
 
 ### 改成只針對yolo的結果
 class DetectResult:
-	def __init__(self, image, labels = [], threshold = 0.2, confidence = 0.2, colors = None):
+	def __init__(
+		self, 
+		image: np.ndarray, 
+		labels: List[str] = [], 
+		threshold: float = 0.2, 
+		confidence: float = 0.2, 
+		colors: List = None
+	):
 		self.image = image
 		self.labels = labels
 		self.threshold = threshold
 		self.confidence = confidence
-		self.boxes = []
-		self.confidences = []
-		self.classIDs = []
+		self.boxes: List[List[int]] = []
+		self.confidences: List[float] = []
+		self.classIDs: List[int] = []
 		self.colors = colors
-		self.NMSIndexs = []
+		self.NMSIndexs: List[int] = []
 
 	@staticmethod
 	def checkColor(color):

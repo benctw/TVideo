@@ -189,35 +189,117 @@ TrafficPolice
 ### 待續 . . .
 
 
-### 參數
-
-```
-$py main.py --number NUMBER --video VIDEOPATH
-```
-內部使用
-
-```
-$py main.py -C 
-"
-       number : [
-              "1",
-              "2",
-              "3"
-       ]
-
-       video :[
-              "./1.mp4",
-              "./2.mp4",
-              "./3.mp4"
-       ]
-"   
+``` python
+class TObject:
 ```
 
+`image` : `np.ndarray`
+`box` : `List`
+`confidence` : `float`
 
+`label` = `'Undefined'`
 
+```python
+class VehicleData
+```
 
-VehicleData
+`centerPosition`
 
-TPFrameData
+---
 
-TPFrames
+```python
+class LicensePlateData
+```
+
+`cornerPoints`
+`correctImage`
+`centerPosition`
+`number`
+
+`@staticmethod`
+
+```python
+def getCornerPoints(image: np.ndarray) -> List
+```
+
+```python
+def correct(image: np.ndarray, cornerPoints, w: int, h: int) -> np.ndarray
+```
+
+```python
+def getNumber(image: np.ndarray) -> str
+```
+
+---
+
+```python
+class TrafficLightData
+```
+
+`state`
+
+`@staticmethod`
+
+```python
+def getTrafficLightColor(image: np.ndarray) -> List[int]
+```
+
+```python
+def ColorDectect(image: np.ndarray, red: int, yellow: int, green: int) -> TrafficLightState
+```
+
+---
+
+```python
+class TFrameData
+```
+
+```frame : np.ndarray, ```
+
+`vehicles: List[VehicleData] = []`
+
+載具數據
+
+`licensePlates: List[LicensePlateData] = []`
+
+車牌數據
+
+`trafficLights: List[TrafficLightData] = []`
+
+紅綠燈數據
+
+---
+
+```python
+class TVideo
+```
+
+`frames`
+`width`
+`height`
+`fps`
+`frameCount`
+`framesData`
+`lastCodename`
+`start`
+`end`
+
+```python
+def forEach(self, callback: ForEachFrameData)
+```
+
+```python
+def runProcess(self, schedule: Callable[[int, int, int], int], process: ForEachFrameData, maxTimes: int = None)
+```
+
+```python
+def findCorresponding(self, typeName: str, frameIndex: int, threshold: float = 0.1)
+```
+
+```python
+def newCodename(self) -> int
+```
+
+```python
+def save(self, path: str, fps: float = 30, fourccType: str = 'mp4v')
+```

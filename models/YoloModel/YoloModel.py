@@ -2,7 +2,7 @@ from typing import List, Tuple
 import numpy as np
 import cv2
 from ..CVModel.CVModel import CVModel, DetectResult
-import config as glo
+import config as cfg
 
 # 應該做成抽象對象，被繼承
 class YoloModel(CVModel):
@@ -45,7 +45,7 @@ class YoloModel(CVModel):
 	
 	def detect(self, image: np.ndarray) -> Tuple[List[List[int]], List[int], List[float]]:
 		H, W = image.shape[:2]
-		blob = cv2.dnn.blobFromImage(image, 1 / 255, (glo.yoloImageWidth, glo.yoloImageHeight), swapRB = True, crop = False)
+		blob = cv2.dnn.blobFromImage(image, 1 / 255, (cfg.yoloImageWidth, cfg.yoloImageHeight), swapRB = True, crop = False)
 		self.net.setInput(blob)
 		layerOutputs = self.net.forward(self.outputLayerNames)
 		
@@ -79,6 +79,7 @@ class YoloModel(CVModel):
 
 		return boxes, classIDs, confidences
 
+	#!
 	def detectImage(self, image: np.ndarray) -> DetectResult:
 		if type(image) is str:
 			image = cv2.imread(image)
