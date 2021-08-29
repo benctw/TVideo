@@ -101,7 +101,7 @@ def main():
 		buildArgparser()
 
 	tVideo = TVideo('D:/chiziSave/違規影片/04-紅燈越線/越線04(267-MAE，095248-095254).mp4')
-	tVideo.runProcess(TVideoSchedule.forEach, Process.yolo)
+	tVideo.runProcess(TVideoSchedule.random, Process.yolo)
 	tVideo.runProcess(TVideoSchedule.forEach, Process.findCorrespondingLicensePlate)
 	tVideo.runProcess(TVideoSchedule.forEach, Process.drawBoxesLicensePlate)
 	tVideo.runProcess(TVideoSchedule.forEach, Process.drawPath)

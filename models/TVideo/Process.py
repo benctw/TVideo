@@ -31,6 +31,9 @@ class Process:
             # 車牌
             elif classID == 1:
                 frameData.licensePlates.append(LicensePlateData(CVModel.crop(frameData.frame, box), box, confidence))
+                if frameData.licensePlates[-1].number == '267MAE':
+                    print('找到了', frameIndex, frameIndex / tvideo.fps, 's')
+                    return ProcessState.stop
                 # frameData.addObj(label, LicensePlateData(CVModel.crop(frameData.frame, box), box, confidence))
         
         return ProcessState.next

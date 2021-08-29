@@ -5,6 +5,8 @@ import easyocr
 import numpy as np
 import cv2
 from rich.progress import track
+import random
+import math
 
 from models.CVModel.CVModel import CVModel, DetectResult, DetectResults
 
@@ -75,11 +77,11 @@ class LicensePlateData:
 		# 車牌的四個角點
 		self.cornerPoints  : List = self.getCornerPoints(self.image)
 		# 矯正的圖像
-		# self.correctImage  : np.ndarray = self.correct(self.image, self.cornerPoints, int(150 * self.ratioOfLicensePlate), 150)
+		self.correctImage  : np.ndarray = self.correct(self.image, self.cornerPoints, int(150 * self.ratioOfLicensePlate), 150)
 		# 車牌質心點位置
 		self.centerPosition: List[int] = CVModel.getCenterPosition(self.cornerPoints)
 		# 車牌號碼
-		# self.number        : str = self.getNumber(self.correctImage)
+		self.number        : str = self.getNumber(self.correctImage)
 	
 	@staticmethod
 	def getCornerPoints(image: np.ndarray) -> List:
@@ -352,38 +354,48 @@ class TVideo:
 		for i in range(0, self.frameCount):
 			callback(self.framesData[i], i, self)
 
-	def runProcess(self, schedule: Callable[[List[int], int], int], process: ForEachFrameData, maxTimes: int = None):
+	def runProcess(self, schedule: Callable[[List[Union[int, List[int]]], int], Union[int, List[int]]], process: ForEachFrameData, maxTimes: int = None):
 		'''
 		if callbackReturnIntex() return a negative number, will stop this process.
 		'''
-		indexs: List[int] = []
-		frameIndex = -1
-		# 有限
-		if not maxTimes is None:
-			for times in track(range(0, maxTimes), "run process"):
-				frameIndex = schedule(indexs, self.frameCount)
-				indexs.append(frameIndex)
-				print('Frame Index:', frameIndex)
-				if frameIndex < 0:
-					print('break')
-					break
-				isBreak = process(self.framesData[frameIndex], frameIndex, self)
-				if isBreak == ProcessState.stop:
-					break
+		indexs: List[Union[int, List[int]]] = []
+		frameIndex: Union[int, List[int]] = -1
 		# 無限
-		else:
-			times = 0
+		if maxTimes is None:
 			while True:
 				frameIndex = schedule(indexs, self.frameCount)
 				indexs.append(frameIndex)
 				print('Frame Index:', frameIndex)
-				if frameIndex < 0:
-					print('break')
-					break
-				isBreak = process(self.framesData[frameIndex], frameIndex, self)
-				if isBreak == ProcessState.stop:
-					break
-				times += 1
+
+				idxs: List[int] = []
+				if type(frameIndex) is int: idxs.append(frameIndex)
+				elif type(frameIndex) is list: idxs = frameIndex
+
+				for i in idxs:
+					if i < 0:
+						print('break')
+						return
+					isBreak = process(self.framesData[i], i, self)
+					if isBreak == ProcessState.stop:
+						return
+		# 有限
+		else:
+			for _ in track(range(0, maxTimes), "run process"):
+				frameIndex = schedule(indexs, self.frameCount)
+				indexs.append(frameIndex)
+				print('Frame Index:', frameIndex)
+				
+				idxs: List[int] = []
+				if type(frameIndex) is int: idxs.append(frameIndex)
+				elif type(frameIndex) is list: idxs = frameIndex
+				
+				for i in idxs:
+					if i < 0:
+						print('break')
+						break
+					isBreak = process(self.framesData[i], i, self)
+					if isBreak == ProcessState.stop:
+						break
 		return self
 
 	#!
@@ -441,44 +453,73 @@ class TVideo:
 
 
 class TVideoSchedule:
+    
+	#檢查返回值有沒有超出frame的範圍，有的話返回-1跳出
+	@staticmethod
+	def checkIndexOutOfRange(resultIndex: int, frameCount: int) -> int:
+		return -1 if resultIndex >= frameCount else resultIndex
+	
+	@staticmethod
+	def oneTimes(resultIndex: int, indexs: List[Union[int, List[int]]]) -> Union[int, List[int]]:
+		return -1 if len(indexs) > 0 else resultIndex
 	
 	@staticmethod
 	def sample(indexs: List[int], frameCount: int) -> int:
 		...
-	
-	#檢查返回值有沒有超出frame的範圍，有的話返回-1跳出
-	@staticmethod
-	def checkIndexOutOfRange(resultIndex: int, frameCount: int) -> int:
-		if resultIndex >= frameCount:
-			return -1
-		return resultIndex
 
 	@staticmethod
-	def forEach(indexs: List[int], frameCount: int) -> int:
-		return TVideoSchedule.checkIndexOutOfRange(indexs[-1] + 1, frameCount)
+	def index(i: int, times: int):
+		def index(indexs: List[int], frameCount: int):
+			if len(indexs) >= times:
+				return -1
+			return TVideoSchedule.checkIndexOutOfRange(i, frameCount)
+		return index
+
+	@staticmethod
+	def forEach(indexs: List[int], frameCount: int) -> Union[int, List[int]]:
+		if len(indexs) > 0: return -1
+		return list(range(0, frameCount))
+		# return TVideoSchedule.checkIndexOutOfRange(indexs[-1] + 1, frameCount)
 	
 	@staticmethod
 	def forEachInterval(interval: int):
-		def forEach(indexs: List[int], frameCount: int) -> int:
-			return TVideoSchedule.checkIndexOutOfRange(indexs[-1] + interval, frameCount)
+		def forEach(indexs: List[int], frameCount: int) -> Union[int, List[int]]:
+			if len(indexs) > 0: return -1
+			return list(range(0, frameCount, interval))
+			# return TVideoSchedule.checkIndexOutOfRange(indexs[-1] + interval, frameCount)
 		return forEach
-	
-	#!
+
 	@staticmethod
-	def binarySearch(indexs: List[int], frameCount: int) -> int:
-		if len(indexs) == 0:
-			previousIndex = int(frameCount / 2)
-		return -1
+	def random(indexs: List[int], frameCount: int) -> Union[int, List[int]]:
+		if len(indexs) > 0: return -1
+		li = list(range(0, frameCount))
+		random.shuffle(li)
+		return li
+	
+	@staticmethod
+	def randomIndex(indexs: List[int], frameCount: int) -> Union[int, List[int]]:
+		if len(indexs) > 0: return -1
+		return random.randint(0, frameCount - 1)
 
-
-#!
-def detectResultToTFrameDatas(detectResult: DetectResult) -> Union[List[LicensePlateData], List[TrafficLightData]]:
-	licensePlates = []
-	for i in range(0, detectResult.count):
-		licensePlates.append(LicensePlateData(detectResult.image, detectResult.boxes[i], detectResult.confidence[i]))
-	return licensePlates
-
-#!
-def detectResultsToTVideoData(detectResults: DetectResults) -> List[TFrameData]:
-    	...
-
+	#!
+	# @staticmethod
+	# def binarySearch(indexs: List[int], frameCount: int) -> Union[int, List[int]]:
+	# 	if len(indexs) > 0: return -1
+	# 	result = []
+	# 	c = 2
+	# 	while len(result) <= frameCount:
+	# 		l = (frameCount - 1) / c
+	# 		i = l
+	# 		for _ in range(0, int(c / 2)):
+				
+	# 			if i.is_integer() and not i in result:
+	# 				result.append(i)
+	# 			else:
+	# 				a = math.floor(i)
+	# 				b = math.ceil(i)
+	# 				if not(a in result and b in result):
+	# 					result.append(math.floor(i))
+	# 					result.append(math.ceil(i))
+	# 			i += l
+	# 		c *= 2
+	# 	return result
