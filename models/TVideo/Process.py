@@ -3,7 +3,7 @@ from models.CVModel.CVModel import *
 from models.TVideo.TVideo import *
 from config import *
 from rich.progress import track
-
+import time
 #!
 colors = None
 def getColors(lastCodename):
@@ -14,6 +14,10 @@ def getColors(lastCodename):
     return colors
 
 class Process:
+    @staticmethod
+    def showIndex(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
+        print('index:', frameIndex)
+        return ProcessState.next
 
     @staticmethod
     def yolo(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
@@ -31,43 +35,46 @@ class Process:
             # 車牌
             elif classID == 1:
                 frameData.licensePlates.append(LicensePlateData(CVModel.crop(frameData.frame, box), box, confidence))
-                if frameData.licensePlates[-1].number == '267MAE':
-                    print('找到了', frameIndex, frameIndex / tvideo.fps, 's')
-                    return ProcessState.stop
                 # frameData.addObj(label, LicensePlateData(CVModel.crop(frameData.frame, box), box, confidence))
         
         return ProcessState.next
 
     @staticmethod
-    def findCorrespondingLicensePlate(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
+    def findCorresponding(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
         print('--> Find Corresponding License Plate Process')
-        tvideo.findCorresponding('licensePlates', frameIndex, 0)
+        if frameIndex == 0:
+            frameImage = np.zeros((tvideo.height, tvideo.width, 3), np.uint8)
+            frameImage.fill(255)
+            tvideo.findCorresponding(TFrameData(frameImage), tvideo.framesData[frameIndex])
+        else:
+            tvideo.findCorresponding(tvideo.framesData[frameIndex - 1], tvideo.framesData[frameIndex])
         return ProcessState.next
 
     @staticmethod
-    def drawBoxesLicensePlate(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
+    def drawBoxes(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
         # print('--> Draw Boxes License Plate')
         colors = getColors(tvideo.lastCodename)
 
         resultImage = frameData.frame
-        for licensePlate in frameData.licensePlates:
-            color = colors[licensePlate.codename]
-            p1x, p1y, p2x, p2y = licensePlate.box
-            # 框
-            cv2.rectangle(resultImage, (p1x, p1y), (p2x, p2y), color, 2)
-            text = '{} {}({:.0f}%)'.format(licensePlate.codename, licensePlate.label, licensePlate.confidence * 100)
-            # 字型設定
-            font = cv2.FONT_HERSHEY_COMPLEX
-            fontScale = 1
-            fontThickness = 1
-            # 顏色反相
-            textColor = [255 - c for c in color]
-            # 獲取字型尺寸
-            (textW, textH), _ = cv2.getTextSize(text, font, fontScale, fontThickness)
-            # 添加字的背景
-            cv2.rectangle(resultImage, (p1x, p1y - textH), (p1x + textW, p1y), color, -1)
-            # 添加字
-            cv2.putText(resultImage, text, (p1x, p1y), font, fontScale, textColor, fontThickness, cv2.LINE_AA)
+        for classIndex in range(0, frameData.numOfClass):
+            for obj in frameData.allClass[classIndex]:
+                color = colors[obj.codename]
+                p1x, p1y, p2x, p2y = obj.box
+                # 框
+                cv2.rectangle(resultImage, (p1x, p1y), (p2x, p2y), color, 2)
+                text = '{} {}({:.0f}%)'.format(obj.codename, obj.label, obj.confidence * 100)
+                # 字型設定
+                font = cv2.FONT_HERSHEY_COMPLEX
+                fontScale = 1
+                fontThickness = 1
+                # 顏色反相
+                textColor = [255 - c for c in color]
+                # 獲取字型尺寸
+                (textW, textH), _ = cv2.getTextSize(text, font, fontScale, fontThickness)
+                # 添加字的背景
+                cv2.rectangle(resultImage, (p1x, p1y - textH), (p1x + textW, p1y), color, -1)
+                # 添加字
+                cv2.putText(resultImage, text, (p1x, p1y), font, fontScale, textColor, fontThickness, cv2.LINE_AA)
 
         return ProcessState.next
 
@@ -81,3 +88,19 @@ class Process:
                 cv2.circle(frameData.frame, (lp.box[0] + lp.centerPosition[0], lp.box[1] + lp.centerPosition[1]), int((windowIndex + 1) / 5), colors[lp.codename], -1)
         return ProcessState.next
     
+    @staticmethod
+    def findNumber(number: str):
+        def __findNumber(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
+            for lp in frameData.licensePlates:
+                if lp.number == number:
+                    print(f'找到對應車牌號碼: {number}')
+                    print(f'在 {frameIndex} 幀, {frameIndex / tvideo.fps} 秒')
+                    return ProcessState.stop
+            return ProcessState.next
+        return __findNumber
+    
+    @staticmethod
+    def test(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
+        print('sleep 5s')
+        time.sleep(5)
+        return ProcessState.next

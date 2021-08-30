@@ -1,7 +1,7 @@
 from typing import List, OrderedDict, Tuple, Any, Union, Callable
 import math
-import numpy as np
-import cv2
+# import numpy as np
+# import cv2
 import os
 import sys
 import argparse
@@ -61,15 +61,15 @@ def yolo(args):
 
 		
 
-		if not args.save is None:
-			resultImage = detectResult.drawBoxes(detectResult.NMSIndexs)
-			cv2.imwrite(args.save, resultImage)
-			print("saved")
+	# 	if not args.save is None:
+	# 		resultImage = detectResult.drawBoxes(detectResult.NMSIndexs)
+	# 		cv2.imwrite(args.save, resultImage)
+	# 		print("saved")
 
-	# video 一定要有--save
-	if not args.video is None:
-		detectResults = TP.LPModel.detectVideo(args.video)
-		saveVideo(detectResults.drawBoxes(indexs=detectResults.NMSIndexs), args.save)
+	# # video 一定要有--save
+	# if not args.video is None:
+	# 	detectResults = TP.LPModel.detectVideo(args.video)
+	# 	saveVideo(detectResults.drawBoxes(indexs=detectResults.NMSIndexs), args.save)
 	os._exit(0)
 
 # 執行 resa
@@ -101,11 +101,14 @@ def main():
 		buildArgparser()
 
 	tVideo = TVideo('D:/chiziSave/違規影片/04-紅燈越線/越線04(267-MAE，095248-095254).mp4')
-	tVideo.runProcess(TVideoSchedule.random, Process.yolo)
-	tVideo.runProcess(TVideoSchedule.forEach, Process.findCorrespondingLicensePlate)
-	tVideo.runProcess(TVideoSchedule.forEach, Process.drawBoxesLicensePlate)
+	tVideo.runProcess(TVideoSchedule.random, Process.showIndex, Process.yolo, Process.findNumber('267MAE'))
+	currentIndex = tVideo.currentIndex
+	tVideo.runProcess(TVideoSchedule.forward(currentIndex + 1, 1), Process.showIndex, Process.yolo)
+	tVideo.runProcess(TVideoSchedule.backward(currentIndex - 1, 1), Process.yolo)
+	tVideo.runProcess(TVideoSchedule.forEach, Process.findCorresponding)
+	tVideo.runProcess(TVideoSchedule.forEach, Process.drawBoxes)
 	tVideo.runProcess(TVideoSchedule.forEach, Process.drawPath)
-	tVideo.save('D:/chiziSave/detect-result/越線04(267-MAE，095248-095254).mp4')
+	tVideo.save('D:/chiziSave/detect-result/越線04(267-MAE，095248-095254)2.mp4')
 
 
 if __name__ == '__main__':

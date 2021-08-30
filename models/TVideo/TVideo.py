@@ -6,7 +6,6 @@ import numpy as np
 import cv2
 from rich.progress import track
 import random
-import math
 
 from models.CVModel.CVModel import CVModel, DetectResult, DetectResults
 
@@ -272,7 +271,9 @@ class TFrameData:
 		# 車牌數據
 		self.licensePlates: List[LicensePlateData] = []
 		# 紅綠燈數據
-		self.trafficLights: List[TrafficLightData] = [] 
+		self.trafficLights: List[TrafficLightData] = []
+		self.allClass: List[List[Any]] = [self.vehicles, self.licensePlates, self.trafficLights]
+		self.numOfClass: int = len(self.allClass)
 		# # 有沒有紅綠燈
 		# self.hasTrafficLight        = hasTrafficLight
 		# # 有沒有車牌
@@ -294,9 +295,11 @@ class TFrameData:
 
 class ProcessState(Enum):
 	next = 1
-	stop = 2
+	nextLoop = 2
+	stop = 3
 
 ForEachFrameData = Callable[[TFrameData, int, Any], ProcessState]
+indexType = Union[int, List[int]]
 
 # 一影片的數據
 class TVideo:
@@ -309,8 +312,8 @@ class TVideo:
 
 		videoDetails = self.__getVideoDetails(path)
 		self.frames    : List[np.ndarray] = videoDetails[0]
-		self.width     : float = videoDetails[1]
-		self.height    : float = videoDetails[2]
+		self.width     : int = videoDetails[1]
+		self.height    : int = videoDetails[2]
 		self.fps       : float = videoDetails[3]
 		self.frameCount: int   = videoDetails[4]
 
@@ -323,6 +326,8 @@ class TVideo:
 		self.start: int = 0
 		# 裁剪影片的結束，-1 是最後
 		self.end: int = -1
+		# 剛處理完的index
+		self.currentIndex: int = -1
 		# # 每幀會處理的流程 #! 沒有用到
 		# self.process: OrderedDict[str, ForEachFrameData] = collections.OrderedDict()
 		# # 上一個流程返回的結果 #! 沒有用到
@@ -344,8 +349,8 @@ class TVideo:
 		# 	frames.append(frame)
 		# 	rval, frame = videoCapture.read()
 		
-		width     : float = videoCapture.get(cv2.CAP_PROP_FRAME_WIDTH)
-		height    : float = videoCapture.get(cv2.CAP_PROP_FRAME_HEIGHT)
+		width     : int = int(videoCapture.get(cv2.CAP_PROP_FRAME_WIDTH))
+		height    : int = int(videoCapture.get(cv2.CAP_PROP_FRAME_HEIGHT))
 		fps       : float = videoCapture.get(cv2.CAP_PROP_FPS)
 		videoCapture.release()
 		return [frames, width, height, fps, frameCount]
@@ -354,18 +359,17 @@ class TVideo:
 		for i in range(0, self.frameCount):
 			callback(self.framesData[i], i, self)
 
-	def runProcess(self, schedule: Callable[[List[Union[int, List[int]]], int], Union[int, List[int]]], process: ForEachFrameData, maxTimes: int = None):
+	def runProcess(self, schedule: Callable[[List[indexType], int], indexType], *processes: ForEachFrameData, maxTimes: int = None):
 		'''
 		if callbackReturnIntex() return a negative number, will stop this process.
 		'''
-		indexs: List[Union[int, List[int]]] = []
-		frameIndex: Union[int, List[int]] = -1
+		indexs: List[indexType] = []
+		frameIndex: indexType = -1
 		# 無限
 		if maxTimes is None:
 			while True:
 				frameIndex = schedule(indexs, self.frameCount)
 				indexs.append(frameIndex)
-				print('Frame Index:', frameIndex)
 
 				idxs: List[int] = []
 				if type(frameIndex) is int: idxs.append(frameIndex)
@@ -375,15 +379,17 @@ class TVideo:
 					if i < 0:
 						print('break')
 						return
-					isBreak = process(self.framesData[i], i, self)
-					if isBreak == ProcessState.stop:
-						return
+					for process in processes:
+						state = process(self.framesData[i], i, self)
+						self.currentIndex = i
+						if state == ProcessState.next: pass
+						elif state == ProcessState.nextLoop: break
+						elif state == ProcessState.stop: return
 		# 有限
 		else:
 			for _ in track(range(0, maxTimes), "run process"):
 				frameIndex = schedule(indexs, self.frameCount)
 				indexs.append(frameIndex)
-				print('Frame Index:', frameIndex)
 				
 				idxs: List[int] = []
 				if type(frameIndex) is int: idxs.append(frameIndex)
@@ -392,43 +398,40 @@ class TVideo:
 				for i in idxs:
 					if i < 0:
 						print('break')
-						break
-					isBreak = process(self.framesData[i], i, self)
-					if isBreak == ProcessState.stop:
-						break
+						return
+					for process in processes:
+						state = process(self.framesData[i], i, self)
+						self.currentIndex = i
+						if state == ProcessState.next: pass
+						elif state == ProcessState.nextLoop: break
+						elif state == ProcessState.stop: return
 		return self
 
 	#!
 	def calc(self):
-		for typeName in ['vehicles', 'licensePlates', 'trafficLights']:
-			self.findCorresponding(typeName, len(self.framesData))
+		...
 
-	#! 應該要寫成staticmethod
-	def findCorresponding(self, typeName: str, frameIndex: int, threshold: float = 0.1):
+	def findCorresponding(self, frameData1: TFrameData, frameData2: TFrameData, threshold: float = 0.1):
 		# 跟前一幀比
-		frameData2 = self.framesData[frameIndex]
-		objs2 = getattr(frameData2, typeName)
-		objs1 = []
-		if frameIndex != 0:
-			frameData1 = self.framesData[frameIndex - 1]
-			objs1 = getattr(frameData1, typeName)
-		
-		for i, obj2 in enumerate(objs2):
-			IoUs = []
-			for obj1 in objs1:
-				IoUs.append(CVModel.IoU(obj2.box, obj1.box))
-			
-			# 完全沒對應
-			if len(IoUs) == 0:
-				objs2[i].codename = self.newCodename()
-			else:
-				# 對應前一幀的 box
-				maxIndex = np.argmax(IoUs)
-				# 小於閥值 或 對應的沒有 codename，給新 codename
-				if IoUs[maxIndex] <= threshold or not hasattr(objs1[maxIndex], 'codename'):
+		for classIndex in range(0, frameData1.numOfClass):
+			objs1 = frameData1.allClass[classIndex]
+			objs2 = frameData2.allClass[classIndex]
+			for i, obj2 in enumerate(objs2):
+				IoUs = []
+				for obj1 in objs1:
+					IoUs.append(CVModel.IoU(obj2.box, obj1.box))
+				
+				# 完全沒對應
+				if len(IoUs) == 0:
 					objs2[i].codename = self.newCodename()
 				else:
-					objs2[i].codename = objs1[maxIndex].codename
+					# 對應前一幀的 box
+					maxIndex = np.argmax(IoUs)
+					# 小於閥值 或 對應的沒有 codename，給新 codename
+					if IoUs[maxIndex] <= threshold or not hasattr(objs1[maxIndex], 'codename'):
+						objs2[i].codename = self.newCodename()
+					else:
+						objs2[i].codename = objs1[maxIndex].codename
 
 	def newCodename(self) -> int:
 		self.lastCodename += 1
@@ -460,66 +463,67 @@ class TVideoSchedule:
 		return -1 if resultIndex >= frameCount else resultIndex
 	
 	@staticmethod
-	def oneTimes(resultIndex: int, indexs: List[Union[int, List[int]]]) -> Union[int, List[int]]:
+	def oneTimes(resultIndex: int, indexs: List[indexType]) -> indexType:
 		return -1 if len(indexs) > 0 else resultIndex
 	
 	@staticmethod
-	def sample(indexs: List[int], frameCount: int) -> int:
+	def sample(indexs: List[indexType], frameCount: int) -> int:
 		...
 
 	@staticmethod
 	def index(i: int, times: int):
-		def index(indexs: List[int], frameCount: int):
+		def __index(indexs: List[indexType], frameCount: int):
 			if len(indexs) >= times:
 				return -1
 			return TVideoSchedule.checkIndexOutOfRange(i, frameCount)
-		return index
+		return __index
 
 	@staticmethod
-	def forEach(indexs: List[int], frameCount: int) -> Union[int, List[int]]:
+	def forEach(indexs: List[indexType], frameCount: int) -> indexType:
 		if len(indexs) > 0: return -1
 		return list(range(0, frameCount))
 		# return TVideoSchedule.checkIndexOutOfRange(indexs[-1] + 1, frameCount)
 	
 	@staticmethod
-	def forEachInterval(interval: int):
-		def forEach(indexs: List[int], frameCount: int) -> Union[int, List[int]]:
+	def forEachStep(step: int):
+		def __forEach(indexs: List[indexType], frameCount: int) -> indexType:
 			if len(indexs) > 0: return -1
-			return list(range(0, frameCount, interval))
-			# return TVideoSchedule.checkIndexOutOfRange(indexs[-1] + interval, frameCount)
-		return forEach
+			return list(range(0, frameCount, step))
+			# return TVideoSchedule.checkIndexOutOfRange(indexs[-1] + step, frameCount)
+		return __forEach
+	
+	@staticmethod
+	def range(start: int, end: int, step):
+		def __range(indexs: List[indexType], frameCount: int) -> indexType:
+			return list(range(start, end, step))
+		return __range
 
 	@staticmethod
-	def random(indexs: List[int], frameCount: int) -> Union[int, List[int]]:
+	def random(indexs: List[indexType], frameCount: int) -> indexType:
 		if len(indexs) > 0: return -1
 		li = list(range(0, frameCount))
 		random.shuffle(li)
 		return li
 	
 	@staticmethod
-	def randomIndex(indexs: List[int], frameCount: int) -> Union[int, List[int]]:
+	def randomIndex(indexs: List[indexType], frameCount: int) -> indexType:
 		if len(indexs) > 0: return -1
 		return random.randint(0, frameCount - 1)
-
-	#!
-	# @staticmethod
-	# def binarySearch(indexs: List[int], frameCount: int) -> Union[int, List[int]]:
-	# 	if len(indexs) > 0: return -1
-	# 	result = []
-	# 	c = 2
-	# 	while len(result) <= frameCount:
-	# 		l = (frameCount - 1) / c
-	# 		i = l
-	# 		for _ in range(0, int(c / 2)):
-				
-	# 			if i.is_integer() and not i in result:
-	# 				result.append(i)
-	# 			else:
-	# 				a = math.floor(i)
-	# 				b = math.ceil(i)
-	# 				if not(a in result and b in result):
-	# 					result.append(math.floor(i))
-	# 					result.append(math.ceil(i))
-	# 			i += l
-	# 		c *= 2
-	# 	return result
+	
+	@staticmethod
+	def forward(start: int, length: int = None, step: int = 1):
+		def __forward(indexs: List[indexType], frameCount: int) -> indexType:
+			if len(indexs) > 0: return -1
+			if not length is None: frameCount = start + length
+			return list(range(start, frameCount, step))
+		return __forward
+	
+	@staticmethod
+	def backward(start: int, length: int = None, step: int = -1):
+		def __backward(indexs: List[indexType], frameCount: int) -> indexType:
+			if len(indexs) > 0: return -1
+			end = start - length
+			if length is None or end < 0: frameCount = 0
+			else: frameCount = end
+			return list(range(start, frameCount, step))
+		return __backward
