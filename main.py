@@ -100,15 +100,14 @@ def main():
 	if len(sys.argv) > 1:
 		buildArgparser()
 
-	tVideo = TVideo('D:/chiziSave/違規影片/04-紅燈越線/越線04(267-MAE，095248-095254).mp4')
-	tVideo.runProcess(TVideoSchedule.random, Process.showIndex, Process.yolo, Process.findNumber('267MAE'))
+	tVideo = TVideo('D:/chiziSave/違規影片/03-紅燈直行/直行08-(XS5-327，182607-182609).mp4')
+	tVideo.runProcess(TVideoSchedule.random, Process.showIndex, Process.yolo, Process.calcLicensePlateData, Process.findCorresponding(), Process.findTargetNumber('XS5327'))
 	currentIndex = tVideo.currentIndex
-	tVideo.runProcess(TVideoSchedule.forward(currentIndex + 1, 1), Process.showIndex, Process.yolo)
-	tVideo.runProcess(TVideoSchedule.backward(currentIndex - 1, 1), Process.yolo)
-	tVideo.runProcess(TVideoSchedule.forEach, Process.findCorresponding)
+	tVideo.runProcess(TVideoSchedule.forward(currentIndex + 1), Process.showIndex, Process.yolo, Process.findCorresponding(), Process.hasCorrespondingTargetLicensePlate)
+	tVideo.runProcess(TVideoSchedule.backward(currentIndex - 1), Process.showIndex, Process.yolo, Process.findCorresponding(reverse=True), Process.hasCorrespondingTargetLicensePlate)
 	tVideo.runProcess(TVideoSchedule.forEach, Process.drawBoxes)
-	tVideo.runProcess(TVideoSchedule.forEach, Process.drawPath)
-	tVideo.save('D:/chiziSave/detect-result/越線04(267-MAE，095248-095254)2.mp4')
+	# tVideo.runProcess(TVideoSchedule.forEach, Process.drawPath)
+	tVideo.save('D:/chiziSave/detect-result/直行08-(XS5-327，182607-182609)16.mp4')
 
 
 if __name__ == '__main__':

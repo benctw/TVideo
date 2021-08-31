@@ -69,7 +69,9 @@ class LicensePlateData:
 		self.box = box
 		self.confidence = confidence
 		self.label = 'LicensePlate'
-		self.calc()
+
+		self.number = ''
+		# self.calc()
 	
 	# 生成之後計算的數據
 	def calc(self):
@@ -175,6 +177,7 @@ class TrafficLightData:
 		self.box = box
 		self.confidence = confidence
 		self.label = 'TrafficLight'
+
 		# self.calc()
 	
 	def calc(self):
@@ -241,6 +244,28 @@ class TrafficLightData:
 				elif overexposeColor[2] == green: return TrafficLightState.green
 		
 		return TrafficLightState.unknow
+
+
+# 車道線數據
+class laneLineData:
+	def __init__(
+		self,
+		image: np.ndarray,
+		lane: List[List[int]],
+		# box  : List,
+		confidence: float,
+	):
+		self.image = image,
+		self.lane = lane
+		self.confidence = confidence
+		self.label = 'lane'
+	
+	def calc(self):
+		self.vanishingPoint = self.getVanishingPoint()
+	
+	def getVanishingPoint(self):
+		...
+
 
 # 一幀的數據
 class TFrameData:
@@ -328,6 +353,9 @@ class TVideo:
 		self.end: int = -1
 		# 剛處理完的index
 		self.currentIndex: int = -1
+		# 目標車牌的codename
+		self.targetLicensePlateCodename: int = -1
+
 		# # 每幀會處理的流程 #! 沒有用到
 		# self.process: OrderedDict[str, ForEachFrameData] = collections.OrderedDict()
 		# # 上一個流程返回的結果 #! 沒有用到
@@ -453,6 +481,13 @@ class TVideo:
 		for frameData in track(self.framesData, "saving video"):
 			out.write(frameData.frame)
 		out.release()
+	
+	#!
+	def saveData(self, path):
+		data = ''
+		with open(path, 'w') as f:
+			f.write(f'{data}\n')
+
 
 
 class TVideoSchedule:
@@ -522,8 +557,6 @@ class TVideoSchedule:
 	def backward(start: int, length: int = None, step: int = -1):
 		def __backward(indexs: List[indexType], frameCount: int) -> indexType:
 			if len(indexs) > 0: return -1
-			end = start - length
-			if length is None or end < 0: frameCount = 0
-			else: frameCount = end
+			frameCount = 0 if length is None else start - length
 			return list(range(start, frameCount, step))
 		return __backward

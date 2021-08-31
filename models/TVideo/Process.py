@@ -38,17 +38,37 @@ class Process:
                 # frameData.addObj(label, LicensePlateData(CVModel.crop(frameData.frame, box), box, confidence))
         
         return ProcessState.next
+    
+    @staticmethod
+    def calcLicensePlateData(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
+        for lp in frameData.licensePlates:
+            lp.calc()
+        return ProcessState.next
 
     @staticmethod
-    def findCorresponding(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
-        print('--> Find Corresponding License Plate Process')
-        if frameIndex == 0:
-            frameImage = np.zeros((tvideo.height, tvideo.width, 3), np.uint8)
-            frameImage.fill(255)
-            tvideo.findCorresponding(TFrameData(frameImage), tvideo.framesData[frameIndex])
-        else:
-            tvideo.findCorresponding(tvideo.framesData[frameIndex - 1], tvideo.framesData[frameIndex])
-        return ProcessState.next
+    def findCorresponding(reverse: bool = False):
+        def __findCorresponding(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
+            print('--> Find Corresponding License Plate Process')
+
+            # 定義邊界和方向
+            edge = tvideo.frameCount if reverse else 0
+            direction = 1 if reverse else -1
+
+            if frameIndex == edge:
+                frameImage = np.zeros((tvideo.height, tvideo.width, 3), np.uint8)
+                frameImage.fill(255)
+                tvideo.findCorresponding(TFrameData(frameImage), frameData)
+            else:
+                tvideo.findCorresponding(tvideo.framesData[frameIndex + direction], frameData)
+            return ProcessState.next
+        return __findCorresponding
+    
+    @staticmethod
+    def hasCorrespondingTargetLicensePlate(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
+        for lp in frameData.licensePlates:
+            if lp.codename == tvideo.targetLicensePlateCodename:
+                return ProcessState.next
+        return ProcessState.stop
 
     @staticmethod
     def drawBoxes(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
@@ -62,7 +82,12 @@ class Process:
                 p1x, p1y, p2x, p2y = obj.box
                 # 框
                 cv2.rectangle(resultImage, (p1x, p1y), (p2x, p2y), color, 2)
-                text = '{} {}({:.0f}%)'.format(obj.codename, obj.label, obj.confidence * 100)
+
+                if obj.label == 'LicensePlate':
+                    text = '{} [{}]'.format(obj.codename, obj.number)
+                else:
+                    text = '{} {}({:.0f}%)'.format(obj.codename, obj.label, obj.confidence * 100)
+
                 # 字型設定
                 font = cv2.FONT_HERSHEY_COMPLEX
                 fontScale = 1
@@ -89,12 +114,13 @@ class Process:
         return ProcessState.next
     
     @staticmethod
-    def findNumber(number: str):
+    def findTargetNumber(number: str):
         def __findNumber(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
             for lp in frameData.licensePlates:
                 if lp.number == number:
                     print(f'找到對應車牌號碼: {number}')
                     print(f'在 {frameIndex} 幀, {frameIndex / tvideo.fps} 秒')
+                    tvideo.targetLicensePlateCodename = lp.codename
                     return ProcessState.stop
             return ProcessState.next
         return __findNumber
