@@ -12,6 +12,14 @@ from models.CVModel.CVModel import CVModel, DetectResult, DetectResults
 Point = Tuple[int, int]
 Box = Tuple[Point, Point]
 
+class TObj(Enum):
+	Undefined = 'Undefined'
+	Vehicle = 'Vehicle'
+	LicensePlate = 'LicensePlate'
+	TrafficLight = 'TrafficLight'
+	Lane = 'Lane'
+
+
 from abc import ABC, abstractmethod
 class TObject(ABC):
 	def __init__(
@@ -23,8 +31,7 @@ class TObject(ABC):
 		self.image = image
 		self.box = box
 		self.confidence = confidence
-		self.label = 'Undefined'
-
+		self.label: TObj = TObj.Undefined
 
 # 一載具的數據
 class VehicleData:
@@ -32,12 +39,14 @@ class VehicleData:
 		self, 
 		image: np.ndarray, 
 		box  : List,
-		confidence: float
+		confidence: float,
+		type : str
 	):
 		self.image = image
 		self.box = box
 		self.confidence = confidence
-		self.label = 'Vehicle'
+		self.type = type
+		self.label: TObj = TObj.Vehicle
 		# self.calc()
 
 	# 生成之後計算的數據
@@ -68,7 +77,7 @@ class LicensePlateData:
 		self.image = image
 		self.box = box
 		self.confidence = confidence
-		self.label = 'LicensePlate'
+		self.label: TObj = TObj.LicensePlate
 
 		self.number = ''
 		# self.calc()
@@ -145,7 +154,12 @@ class LicensePlateData:
 		h, w = image.shape[:2]
 		imageCenterPoint = (w / 2, h / 2)
 		reader = easyocr.Reader(['en'])
-		easyocrResult: List[Any] = reader.readtext(image)
+		
+		easyocrResult: List[Any] = reader.readtext(
+			image, 
+			allowlist = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+			batch_size = 5
+		)
 		if len(easyocrResult) == 0:
 			return ''
 		elif len(easyocrResult) == 1:
@@ -161,10 +175,10 @@ class LicensePlateData:
 
 # 紅綠燈狀態
 class TrafficLightState(Enum):
-	unknow = 0
-	red    = 1
-	yellow = 2
-	green  = 3
+	unknow = 'unknow'
+	red    = 'red'
+	yellow = 'yellow'
+	green  = 'green'
 
 class TrafficLightData:
 	def __init__(
@@ -176,9 +190,9 @@ class TrafficLightData:
 		self.image = image
 		self.box = box
 		self.confidence = confidence
-		self.label = 'TrafficLight'
+		self.label: TObj = TObj.TrafficLight
 
-		# self.calc()
+		self.calc()
 	
 	def calc(self):
 		# 紅綠燈狀態
@@ -247,7 +261,7 @@ class TrafficLightData:
 
 
 # 車道線數據
-class laneLineData:
+class LaneData:
 	def __init__(
 		self,
 		image: np.ndarray,
@@ -258,7 +272,7 @@ class laneLineData:
 		self.image = image,
 		self.lane = lane
 		self.confidence = confidence
-		self.label = 'lane'
+		self.label: TObj = TObj.Lane
 	
 	def calc(self):
 		self.vanishingPoint = self.getVanishingPoint()
@@ -283,14 +297,6 @@ class TFrameData:
 		self.frame                  = frame
 		# self.editedFrame: np.ndarray = frame.copy()
 		# self.temp: Any = ''
-		# self.objs: List[List[Any]] = [
-		# 	# 載具數據
-		# 	[],
-		# 	# 車牌數據
-		# 	[],
-		# 	# 紅綠燈數據
-		# 	[]
-		# ]
 		# 載具數據
 		self.vehicles: List[VehicleData] = []
 		# 車牌數據
@@ -299,6 +305,7 @@ class TFrameData:
 		self.trafficLights: List[TrafficLightData] = []
 		self.allClass: List[List[Any]] = [self.vehicles, self.licensePlates, self.trafficLights]
 		self.numOfClass: int = len(self.allClass)
+		self.currentTrafficLightState: TrafficLightState = TrafficLightState.unknow
 		# # 有沒有紅綠燈
 		# self.hasTrafficLight        = hasTrafficLight
 		# # 有沒有車牌
@@ -483,7 +490,7 @@ class TVideo:
 		out.release()
 	
 	#!
-	def saveData(self, path):
+	def saveData(self, path: str):
 		data = ''
 		with open(path, 'w') as f:
 			f.write(f'{data}\n')

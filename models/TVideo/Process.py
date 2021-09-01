@@ -1,3 +1,4 @@
+from os import stat
 from models.YoloModel.YoloModel import *
 from models.CVModel.CVModel import *
 from models.TVideo.TVideo import *
@@ -24,18 +25,15 @@ class Process:
         print('--> Yolo Process')
         boxes, classIDs, confidences = LPModel.detect(frameData.frame)
 
-        for objIndex, classID in enumerate(track(classIDs, 'Add data')):
+        for objIndex, classID in enumerate(classIDs):
             box = boxes[objIndex]
             confidence = confidences[objIndex]
             # 紅綠燈
             if classID == 0:
-                # 因為label名稱有空格，不能成為class的屬性名稱
                 frameData.trafficLights.append(TrafficLightData(CVModel.crop(frameData.frame, box), box, confidence))
-                # frameData.addObj(label, TrafficLightData(CVModel.crop(frameData.frame, box), box, confidence))
             # 車牌
             elif classID == 1:
                 frameData.licensePlates.append(LicensePlateData(CVModel.crop(frameData.frame, box), box, confidence))
-                # frameData.addObj(label, LicensePlateData(CVModel.crop(frameData.frame, box), box, confidence))
         
         return ProcessState.next
     
@@ -78,13 +76,18 @@ class Process:
         resultImage = frameData.frame
         for classIndex in range(0, frameData.numOfClass):
             for obj in frameData.allClass[classIndex]:
+                #!
+                if obj.label is TObj.LicensePlate and obj.codename != tvideo.targetLicensePlateCodename: continue
+                
                 color = colors[obj.codename]
                 p1x, p1y, p2x, p2y = obj.box
                 # 框
                 cv2.rectangle(resultImage, (p1x, p1y), (p2x, p2y), color, 2)
 
-                if obj.label == 'LicensePlate':
-                    text = '{} [{}]'.format(obj.codename, obj.number)
+                if obj.label is TObj.LicensePlate:
+                    text = f'{obj.codename} [{obj.number}]'
+                elif obj.label is TObj.TrafficLight:
+                    text = f'{obj.codename} {obj.state}'
                 else:
                     text = '{} {}({:.0f}%)'.format(obj.codename, obj.label, obj.confidence * 100)
 
@@ -125,6 +128,51 @@ class Process:
             return ProcessState.next
         return __findNumber
     
+    # 判斷當前的紅綠燈
+    @staticmethod
+    def correspondingTrafficLights(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
+        tlsArea = []
+        for tl in frameData.trafficLights:
+            if tl.state is TrafficLightState.unknow: tlsArea.append(0)
+            else: tlsArea.append(CVModel.boxArea(tl.box))
+        if len(tlsArea) != 0:
+            maxAreaIndex = np.argmax(tlsArea)
+            frameData.currentTrafficLightState = frameData.trafficLights[maxAreaIndex].state
+        return ProcessState.next
+    
+    @staticmethod
+    def drawCurrentTrafficLightState(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
+        resultImage = frameData.frame
+        text = frameData.currentTrafficLightState.value
+        # 字型設定
+        font = cv2.FONT_HERSHEY_COMPLEX
+        fontScale = 1
+        fontThickness = 1
+        
+        color = (0, 0, 0)
+        if frameData.currentTrafficLightState is TrafficLightState.red: textColor = (0, 0, 255)
+        elif frameData.currentTrafficLightState is TrafficLightState.yellow: textColor = (255, 255, 0)
+        elif frameData.currentTrafficLightState is TrafficLightState.green: textColor = (0, 255, 0)
+        else: textColor = (255, 255, 255)
+
+        # 獲取字型尺寸
+        (textW, textH), _ = cv2.getTextSize(text, font, fontScale, fontThickness)
+        # 添加字的背景
+        cv2.rectangle(resultImage, (0, 0 + textH), (0 + textW, 0), color, -1)
+        # 添加字
+        cv2.putText(resultImage, text, (0, 0 + textH), font, fontScale, textColor, fontThickness, cv2.LINE_AA)
+        return ProcessState.next
+    
+    @staticmethod
+    def cocoDetect(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
+        print('-> coco detect')
+        boxes, classIDs, confidences = coco.detect(frameData.frame)
+        for objIndex, classID in enumerate(classIDs):
+            box = boxes[objIndex]
+            confidence = confidences[objIndex]
+            frameData.vehicles.append(VehicleData(CVModel.crop(frameData.frame, box), box, confidence, coco.labels[classID]))
+        return ProcessState.next
+
     @staticmethod
     def test(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
         print('sleep 5s')

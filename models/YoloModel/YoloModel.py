@@ -2,7 +2,7 @@ from typing import List, Tuple
 import numpy as np
 import cv2
 from ..CVModel.CVModel import CVModel, DetectResult
-import config as cfg
+# import config as cfg
 
 # 應該做成抽象對象，被繼承
 class YoloModel(CVModel):
@@ -11,6 +11,8 @@ class YoloModel(CVModel):
 		namesPath    : str, 
 		configPath   : str, 
 		weightsPath  : str, 
+		inputWidth   : int,
+		inputHeight  : int,
 		confidence   : float = 0.2, 
 		threshold    : float = 0.7, 
 		minConfidence: float = 0.2
@@ -20,6 +22,8 @@ class YoloModel(CVModel):
 		self.namesPath     = namesPath
 		self.configPath    = configPath
 		self.weightsPath   = weightsPath
+		self.inputWidth    = inputWidth
+		self.inputHeight   = inputHeight
 		# 至少要在此信心以上
 		self.confidence    = confidence
 		# 可重疊程度
@@ -45,7 +49,7 @@ class YoloModel(CVModel):
 	
 	def detect(self, image: np.ndarray) -> Tuple[List[List[int]], List[int], List[float]]:
 		H, W = image.shape[:2]
-		blob = cv2.dnn.blobFromImage(image, 1 / 255, (cfg.yoloImageWidth, cfg.yoloImageHeight), swapRB = True, crop = False)
+		blob = cv2.dnn.blobFromImage(image, 1 / 255, (self.inputWidth, self.inputHeight), swapRB = True, crop = False)
 		self.net.setInput(blob)
 		layerOutputs = self.net.forward(self.outputLayerNames)
 		
