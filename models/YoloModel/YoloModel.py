@@ -52,7 +52,7 @@ class YoloModel(CVModel):
 		blob = cv2.dnn.blobFromImage(image, 1 / 255, (self.inputWidth, self.inputHeight), swapRB = True, crop = False)
 		self.net.setInput(blob)
 		layerOutputs = self.net.forward(self.outputLayerNames)
-		
+
 		boxes      : List[List[int]] = []
 		classIDs   : List[int] = []
 		confidences: List[float] = []

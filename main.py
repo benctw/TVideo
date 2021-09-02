@@ -1,3 +1,4 @@
+from re import S
 from typing import List, OrderedDict, Tuple, Any, Union, Callable
 import math
 # import numpy as np
@@ -105,7 +106,7 @@ def main():
 		TVideoSchedule.random, 
 		Process.showIndex, 
 		Process.yolo, 
-		Process.cocoDetect, 
+		# Process.cocoDetect, 
 		Process.calcLicensePlateData, 
 		Process.findCorresponding(), 
 		Process.findTargetNumber('267MAE')
@@ -115,7 +116,8 @@ def main():
 		TVideoSchedule.forward(currentIndex + 1), 
 		Process.showIndex, 
 		Process.yolo, 
-		Process.cocoDetect,
+		# Process.cocoDetect,
+		Process.calcLicensePlateData, 
 		Process.findCorresponding(), 
 		Process.hasCorrespondingTargetLicensePlate
 	)
@@ -123,7 +125,8 @@ def main():
 		TVideoSchedule.backward(currentIndex - 1), 
 		Process.showIndex, 
 		Process.yolo, 
-		Process.cocoDetect,
+		# Process.cocoDetect,
+		Process.calcLicensePlateData, 
 		Process.findCorresponding(reverse=True), 
 		Process.hasCorrespondingTargetLicensePlate
 	)
@@ -131,10 +134,11 @@ def main():
 		TVideoSchedule.forEach, 
 		Process.drawBoxes,
 		Process.correspondingTrafficLights,
-		Process.drawCurrentTrafficLightState
+		Process.drawCurrentTrafficLightState,
+		Process.getRangeOfTargetLicensePlate
 	)
 	# tVideo.runProcess(TVideoSchedule.forEach, Process.drawPath)
-	tVideo.save('D:/chiziSave/detect-result/越線04(267-MAE，095248-095254)4.mp4')
+	tVideo.save('D:/chiziSave/detect-result/越線04(267-MAE，095248-095254)5.mp4', tVideo.start, tVideo.end)
 
 
 if __name__ == '__main__':

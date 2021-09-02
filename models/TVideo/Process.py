@@ -172,6 +172,14 @@ class Process:
             confidence = confidences[objIndex]
             frameData.vehicles.append(VehicleData(CVModel.crop(frameData.frame, box), box, confidence, coco.labels[classID]))
         return ProcessState.next
+    
+    @staticmethod
+    def getRangeOfTargetLicensePlate(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
+        for lp in frameData.licensePlates:
+            if lp.codename == tvideo.targetLicensePlateCodename:
+                tvideo.start = frameIndex if tvideo.start == 0 else min(tvideo.start, frameIndex)
+                tvideo.end = max(tvideo.end, frameIndex)
+        return ProcessState.next
 
     @staticmethod
     def test(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:

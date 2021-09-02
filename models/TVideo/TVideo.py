@@ -482,10 +482,13 @@ class TVideo:
 		# if hasattr(objs[i], 'possiblePositionAtTheNextMoment'):
 		return []
 
-	def save(self, path: str, fps: float = 30, fourccType: str = 'mp4v'):
+	#! end = -1?
+	def save(self, path: str, start: int = None, end: int = None, fps: float = None, fourccType: str = 'mp4v'):
+		print(start, end)
+		if fps is None: fps = self.fps
 		fourcc = cv2.VideoWriter_fourcc(*fourccType)
 		out = cv2.VideoWriter(path, fourcc, fps, (int(self.width), int(self.height)))
-		for frameData in track(self.framesData, "saving video"):
+		for frameData in track(self.framesData[start: end], "saving video"):
 			out.write(frameData.frame)
 		out.release()
 	
