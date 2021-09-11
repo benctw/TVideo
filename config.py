@@ -13,7 +13,7 @@ LPModel = YoloModel(
 )
 
 
-outputDir = ''
+outputDir = __dirname + '/store/output/'
 
 coco = YoloModel(
     namesPath   = "D:/chiziSave/yolov3coco/coco.names",

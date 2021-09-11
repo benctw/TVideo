@@ -83,6 +83,24 @@ class CVModel(ABC):
 	def crop(image: np.ndarray, box: List[int]) -> np.ndarray:
 		croppedImage = image.copy()
 		return croppedImage[box[1]:box[3], box[0]:box[2]]
+	
+	@staticmethod
+	def expand(box: List[int], px: int) -> List[int]:
+		newBox = box.copy()
+		newBox[0] -= px
+		newBox[1] -= px
+		newBox[2] += px
+		newBox[3] += px
+		return newBox
+
+	@staticmethod
+	def offset(box: List[int], x: int, y: int) -> List[int]:
+		newBox = box.copy()
+		newBox[0] += x
+		newBox[1] += y
+		newBox[2] += x
+		newBox[3] += y
+		return newBox
 
 	#過曝處理
 	@staticmethod

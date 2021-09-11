@@ -1,10 +1,14 @@
-from os import stat
 from models.YoloModel.YoloModel import *
 from models.CVModel.CVModel import *
 from models.TVideo.TVideo import *
+from models.helper import *
 from config import *
 from rich.progress import track
 import time
+import math
+import numpy as np
+import cv2
+
 #!
 colors = None
 def getColors(lastCodename):
@@ -151,7 +155,7 @@ class Process:
         
         color = (0, 0, 0)
         if frameData.currentTrafficLightState is TrafficLightState.red: textColor = (0, 0, 255)
-        elif frameData.currentTrafficLightState is TrafficLightState.yellow: textColor = (255, 255, 0)
+        elif frameData.currentTrafficLightState is TrafficLightState.yellow: textColor = (0, 255, 255)
         elif frameData.currentTrafficLightState is TrafficLightState.green: textColor = (0, 255, 0)
         else: textColor = (255, 255, 255)
 
@@ -174,7 +178,7 @@ class Process:
         return ProcessState.next
     
     @staticmethod
-    def getRangeOfTargetLicensePlate(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
+    def updateRangeOfTargetLicensePlate(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
         for lp in frameData.licensePlates:
             if lp.codename == tvideo.targetLicensePlateCodename:
                 tvideo.start = frameIndex if tvideo.start == 0 else min(tvideo.start, frameIndex)
@@ -185,4 +189,95 @@ class Process:
     def test(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
         print('sleep 5s')
         time.sleep(5)
+        return ProcessState.next
+
+    #!
+    @staticmethod
+    def sift(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
+
+        if frameIndex - 1 < 0: return ProcessState.next
+
+        queryImage: np.ndarray = np.array([])
+        trainImage: np.ndarray = np.array([])
+
+        hasTargetLicensePlate = False
+        for lp in tvideo.framesData[frameIndex - 1].licensePlates:
+            if lp.codename == tvideo.targetLicensePlateCodename:
+                
+                hasTargetLicensePlate = True
+
+                #! 根據前面的路徑去推算要offset的量
+                queryImage = CVModel.crop(frameData.frame, CVModel.offset(CVModel.expand(lp.box, 10), x=0, y=0))
+                queryImage = cv2.cvtColor(queryImage, cv2.COLOR_RGB2GRAY)
+                #! 要確認上一幀已經做了矯正
+                trainImage = cv2.cvtColor(lp.correctImage, cv2.COLOR_RGB2GRAY)
+                break
+
+        if not hasTargetLicensePlate: return ProcessState.next
+
+        FLANN_INDEX_KDTREE = 1
+        index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
+
+        FLANN_INDEX_LSH = 6
+        index_params= dict(algorithm = FLANN_INDEX_LSH,
+                        table_number = 6, # 12
+                        key_size = 12,     # 20
+                        multi_probe_level = 1) #2
+
+        # Initiate SIFT detector
+        sift = cv2.SIFT_create()
+        # find the keypoints and descriptors with SIFT
+        kp1, des1 = sift.detectAndCompute(queryImage, None)
+        kp2, des2 = sift.detectAndCompute(trainImage, None)
+        # FLANN parameters
+        FLANN_INDEX_KDTREE = 1
+        index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
+        search_params = dict(checks=50)   # or pass empty dictionary
+        flann = cv2.FlannBasedMatcher(index_params,search_params)
+        matches = flann.knnMatch(des1,des2,k=2)
+        # Need to draw only good matches, so create a mask
+        matchesMask = [[0,0] for i in range(len(matches))]
+        # ratio test as per Lowe's paper
+        for i,(m,n) in enumerate(matches):
+            if m.distance < 0.7*n.distance:
+                matchesMask[i]=[1,0]
+        draw_params = dict(matchColor = (0,255,0),
+                        singlePointColor = (255,0,0),
+                        matchesMask = matchesMask,
+                        flags = cv2.DrawMatchesFlags_DEFAULT)
+        img3 = cv2.drawMatchesKnn(queryImage,kp1,trainImage,kp2,matches,None,**draw_params)
+
+        h, w = img3.shape[:2]
+
+        frameData.frame[0:h, 0:w] = img3
+        
+        return ProcessState.next
+    
+    #!
+    @staticmethod
+    def calcPathDirection(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
+
+        def drivingDirection(p1: List[int], p2: List[int]) -> Tuple[float, ...]:
+            vector: Tuple[int, ...] = tuple(p1[i] - p2[i] for i in range(0, len(p1)))
+            print('v', vector)
+            norm = math.sqrt(sum([v ** 2 for v in vector]))
+            print('norm', norm)
+            unitVector = tuple(v / norm if norm != 0 else 0 for v in vector)
+            return unitVector
+        
+        if frameIndex + 1 >= tvideo.frameCount: return ProcessState.next
+
+        position1 = frameData.getTargetLicensePlatePosition(tvideo.targetLicensePlateCodename)
+        position2 = tvideo.framesData[frameIndex + 1].getTargetLicensePlatePosition(tvideo.targetLicensePlateCodename)
+
+        if position1 is None or position2 is None: return ProcessState.next
+
+        shift = (tvideo.width - 100, 100)
+
+        unitVector = drivingDirection(position1, position2)
+        print(unitVector)
+        unitVector = tuple(int(unitVector[i] * 15 + shift[i]) for i in range(0, len(unitVector)))
+        print(unitVector)
+        frameData.frame = cv2.arrowedLine(frameData.frame, shift, unitVector, (0, 0, 255), 3) 
+
         return ProcessState.next

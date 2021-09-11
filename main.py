@@ -1,5 +1,3 @@
-from re import S
-from typing import List, OrderedDict, Tuple, Any, Union, Callable
 import math
 # import numpy as np
 # import cv2
@@ -8,6 +6,7 @@ import sys
 import argparse
 import Levenshtein
 from rich.progress import track
+from enum import Enum, auto
 
 import config as glo
 from models.helper import *
@@ -26,6 +25,12 @@ def buildArgparser():
 	#在此增加 detect 參數
 	parser_detect.add_argument("path", nargs='*', help='enter your path of video and PL')
 
+
+
+	parser_findNumber = subparsers.add_parser('findNumber', help='findNumber')
+	parser_findNumber.add_argument("data", nargs='*', help='')
+
+
 	# create the parser for the "yolo" command
 	parser_yolo = subparsers.add_parser('yolo', help='Yolo model')
 	#在此增加 yolo 參數
@@ -42,6 +47,9 @@ def buildArgparser():
 	#在此增加 smoke 參數
 
 	parser_detect.set_defaults(func=detect)
+
+	parser_findNumber.set_defaults(func=findNumber)
+
 	parser_yolo.set_defaults(func=yolo)
 	parser_resa.set_defaults(func=resa)
 	parser_smoke.set_defaults(func=smoke)
@@ -49,10 +57,68 @@ def buildArgparser():
 	args.func(args)
 	return
 
+
+success = 'success'
+fail = 'fail'
+
+def send(state, type, progressRate = None, data = None):
+	print({
+		'state': state,
+		'type': type,
+		'progressRate': progressRate,
+		'data': data
+	})
+
+
 # 執行 detect
 def detect(args):
 	print("detect")
 	os._exit(0)
+
+# 執行 findNumber
+def findNumber(args):
+	paths = args.data[::2]
+	numbers = args.data[1::2]
+	print(paths, '\n', numbers)
+	tVideo = TVideo(paths[0])
+	tVideo.runProcess(
+		TVideoSchedule.random, 
+		Process.showIndex, 
+		Process.yolo, 
+		Process.calcLicensePlateData, 
+		Process.findCorresponding(), 
+		Process.findTargetNumber(numbers)
+	)
+	send('success', 'findNumber', 0.25)
+	currentIndex = tVideo.currentIndex
+	tVideo.runProcess(
+		TVideoSchedule.forward(currentIndex + 1, 5), 
+		Process.showIndex, 
+		Process.yolo, 
+		Process.findCorresponding(), 
+		Process.hasCorrespondingTargetLicensePlate
+	)
+	send('success', 'findNumber', 0.50)
+	tVideo.runProcess(
+		TVideoSchedule.backward(currentIndex - 1, 5), 
+		Process.showIndex, 
+		Process.yolo, 
+		Process.findCorresponding(reverse=True), 
+		Process.hasCorrespondingTargetLicensePlate
+	)
+	send('success', 'findNumber', 0.75)
+	tVideo.runProcess(
+		TVideoSchedule.forEach, 
+		Process.drawBoxes,
+		Process.correspondingTrafficLights,
+		Process.drawCurrentTrafficLightState,
+		Process.updateRangeOfTargetLicensePlate,
+	)
+	tVideo.save(outputDir + '1.mp4')
+	send('success', 'findNumber', 1, {
+		'start': tVideo.start,
+		'end': tVideo.end
+	})
 
 #!
 # 執行 yolo
@@ -111,6 +177,8 @@ def main():
 		Process.findCorresponding(), 
 		Process.findTargetNumber('267MAE')
 	)
+	# tVideo.saveData('D:/chiziSave/TrafficPolice/saveData.tvd')
+
 	currentIndex = tVideo.currentIndex
 	tVideo.runProcess(
 		TVideoSchedule.forward(currentIndex + 1), 
@@ -135,10 +203,11 @@ def main():
 		Process.drawBoxes,
 		Process.correspondingTrafficLights,
 		Process.drawCurrentTrafficLightState,
-		Process.getRangeOfTargetLicensePlate
+		Process.updateRangeOfTargetLicensePlate,
+		Process.calcPathDirection
 	)
 	# tVideo.runProcess(TVideoSchedule.forEach, Process.drawPath)
-	tVideo.save('D:/chiziSave/detect-result/越線04(267-MAE，095248-095254)5.mp4', tVideo.start, tVideo.end)
+	tVideo.save('D:/chiziSave/detect-result/越線04(267-MAE，095248-095254)7.mp4')
 
 
 if __name__ == '__main__':

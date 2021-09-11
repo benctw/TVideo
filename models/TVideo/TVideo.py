@@ -6,6 +6,7 @@ import numpy as np
 import cv2
 from rich.progress import track
 import random
+import pickle
 
 from models.CVModel.CVModel import CVModel, DetectResult, DetectResults
 
@@ -186,20 +187,20 @@ class TrafficLightData:
 		image: np.ndarray,
 		box  : List,
 		confidence: float
-	):
+  ):
 		self.image = image
 		self.box = box
 		self.confidence = confidence
 		self.label: TObj = TObj.TrafficLight
 
 		self.calc()
-	
+
 	def calc(self):
 		# 紅綠燈狀態
-		self.state: TrafficLightState = self.ColorDectect(self.image, *self.getTrafficLightColor(self.image))
-	
+		self.state: TrafficLightState = self.ColorDectect(self.image)
+
 	@staticmethod
-	def getTrafficLightColor(image: np.ndarray) -> List[int]:
+	def getTrafficLightColor(image: np.ndarray) -> Tuple[TrafficLightState, np.ndarray]:
 		hsvImg = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 		# min and max HSV values
 		redMin  = np.array([0, 5, 150])
@@ -221,43 +222,60 @@ class TrafficLightData:
 		yellowBlur = cv2.medianBlur(yellowThresh, 5)
 		greenBlur  = cv2.medianBlur(greenThresh, 5)
 
-		red    = cv2.countNonZero(redBlur)
+		red = cv2.countNonZero(redBlur)
 		yellow = cv2.countNonZero(yellowBlur)
-		green  = cv2.countNonZero(greenBlur)	
+		green  = cv2.countNonZero(greenBlur)
+
+		maxIndex = np.argmax([red, yellow, green])
+
+		if maxIndex == 0: return TrafficLightState.red, redBlur
+		elif maxIndex == 1: return TrafficLightState.yellow, yellowBlur
+		elif maxIndex == 2: return TrafficLightState.green, greenBlur
+		else: return TrafficLightState.unknow, np.zeros((0, 0), np.uint8)
+
+	#將Blur圖片分三等份
+	@staticmethod
+	def threePartOfTrafficLight(image: np.ndarray) -> List[np.ndarray]:
+
+		h, w = image.shape[:2]
+		w /= 3
+		partOne = [0, 0, int(w), int(h)]
+		partTwo = [int(w), 0, int(2*w), int(h)]
+		partThree = [int(2*w), 0, int(3*w), int(h)]
+
+		partOneImg = CVModel.crop(image, partOne)
+		partTwoImg = CVModel.crop(image, partTwo)
+		partThreeImg = CVModel.crop(image, partThree)
+
+		threePartImgs = [partOneImg, partTwoImg, partThreeImg]
 		
-		return [red, yellow, green]
-		
-		# if lightColor > 60:
-    	# 		if lightColor == red: return TrafficLightState.red
-		# 	elif lightColor == yellow: return TrafficLightState.yellow
-		# 	elif lightColor == green: return TrafficLightState.green
-		# else:
-		# 	image = CVModel.OverexPose(image)
-		
-		# return TrafficLightState.unknow
+		return threePartImgs
 
 	@staticmethod
-	def ColorDectect(image: np.ndarray, red: int, yellow: int, green: int) -> TrafficLightState:
-		lightColor = max(red, yellow, green)
-		if lightColor >= 20:
-			if lightColor == red: return TrafficLightState.red
-			elif lightColor == yellow: return TrafficLightState.yellow
-			elif lightColor == green: return TrafficLightState.green
-		elif lightColor < 20:
-			image = CVModel.OverexPose(image)
-			overexpose = image.copy()
-			equalizeOver = np.zeros(overexpose.shape, overexpose.dtype)
-			equalizeOver[:, :, 0] = cv2.equalizeHist(overexpose[:, :, 0])
-			equalizeOver[:, :, 1] = cv2.equalizeHist(overexpose[:, :, 1])
-			equalizeOver[:, :, 2] = cv2.equalizeHist(overexpose[:, :, 2])
-			overexposeColor = TrafficLightData.getTrafficLightColor(overexpose)
-			lightColor = max(*overexposeColor)
-			if lightColor >= 20:
-				if overexposeColor[0] == red: return TrafficLightState.red
-				elif overexposeColor[1] == yellow: return TrafficLightState.yellow
-				elif overexposeColor[2] == green: return TrafficLightState.green
+	def cntsOfeachPart(threePartImgs: List[np.ndarray]) -> TrafficLightState:
+
+		partOneCnts = cv2.countNonZero(threePartImgs[0])
+		partTwoCnts = cv2.countNonZero(threePartImgs[1])
+		partThreeCnts = cv2.countNonZero(threePartImgs[2])
+
+		cnts = max(partOneCnts, partTwoCnts, partThreeCnts)
+
+		if cnts == partOneCnts : return TrafficLightState.red
+		elif cnts == partTwoCnts : return TrafficLightState.yellow
+		elif cnts == partThreeCnts : return TrafficLightState.green
+		else: return TrafficLightState.unknow
+
+	@staticmethod
+	def ColorDectect(image: np.ndarray) -> TrafficLightState:
 		
-		return TrafficLightState.unknow
+		lightColorState, blur = TrafficLightData.getTrafficLightColor(image)
+		threePartImgs = TrafficLightData.threePartOfTrafficLight(blur)
+		colorOfPartState = TrafficLightData.cntsOfeachPart(threePartImgs)
+		
+		if lightColorState == TrafficLightState.red and colorOfPartState == TrafficLightState.red: return TrafficLightState.red
+		elif lightColorState == TrafficLightState.yellow and colorOfPartState == TrafficLightState.yellow: return TrafficLightState.yellow
+		elif lightColorState == TrafficLightState.green and colorOfPartState == TrafficLightState.green: return TrafficLightState.green
+		else: return TrafficLightState.unknow
 
 
 # 車道線數據
@@ -323,6 +341,13 @@ class TFrameData:
 			setattr(self, className, attr.append(data))
 		else:
 			setattr(self, className, [data])
+	
+	def getTargetLicensePlatePosition(self, targetLicensePlateCodename) -> Union[List[int], None]:
+		for lp in self.licensePlates:
+			if lp.codename == targetLicensePlateCodename and hasattr(lp, 'centerPosition'):
+				return lp.centerPosition
+		return None
+	
 
 
 class ProcessState(Enum):
@@ -472,6 +497,32 @@ class TVideo:
 		self.lastCodename += 1
 		return self.lastCodename
 	
+	def getTargetLicensePlatePath(self) -> List[List[int]]:
+		path = []
+		for frameData in self.framesData:
+			hasTargetLicensePlate = False
+			for lp in frameData.licensePlates:
+				if lp.codename == self.targetLicensePlateCodename and hasattr(lp, 'centerPosition'):
+					path.append(lp.centerPosition)
+					hasTargetLicensePlate = True
+			if not hasTargetLicensePlate:
+				path.append(None)
+		return path
+	
+	def getVaildTargetLicensePlatePath(self) -> List[List[int]]:
+		path = []
+		#! 把none刪掉，回傳多段路徑
+		for frameData in self.framesData:
+			hasTargetLicensePlate = False
+			for lp in frameData.licensePlates:
+				if lp.codename == self.targetLicensePlateCodename and hasattr(lp, 'centerPosition'):
+					path.append(lp.centerPosition)
+					hasTargetLicensePlate = True
+			if not hasTargetLicensePlate:
+				path.append(None)
+		return path
+
+	
 	#!
 	def getVehicleCorrespondingToTheLicensePlate(self, licensePlateData: LicensePlateData) -> VehicleData:
 		...
@@ -494,9 +545,11 @@ class TVideo:
 	
 	#!
 	def saveData(self, path: str):
-		data = ''
-		with open(path, 'w') as f:
-			f.write(f'{data}\n')
+		with open(path, 'wb') as f:
+			pickle.dump(self, f)
+			
+	# def loadData(self, path: str):
+		
 
 
 
@@ -516,11 +569,11 @@ class TVideoSchedule:
 		...
 
 	@staticmethod
-	def index(i: int, times: int):
-		def __index(indexs: List[indexType], frameCount: int):
-			if len(indexs) >= times:
-				return -1
-			return TVideoSchedule.checkIndexOutOfRange(i, frameCount)
+	def index(i: int, times: int = 1):
+		def __index(indexs: List[indexType], frameCount: int) -> indexType:
+			if len(indexs) > 0: return -1
+			return [i] * times
+			# return TVideoSchedule.checkIndexOutOfRange(i, frameCount)
 		return __index
 
 	@staticmethod
