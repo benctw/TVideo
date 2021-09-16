@@ -3,6 +3,7 @@ from models.CVModel.CVModel import *
 from models.TVideo.TVideo import *
 from models.helper import *
 from config import *
+from ..communicate import *
 from rich.progress import track
 import time
 import math
@@ -21,12 +22,11 @@ def getColors(lastCodename):
 class Process:
     @staticmethod
     def showIndex(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
-        print('index:', frameIndex)
+        INFO(f'index: {frameIndex}')
         return ProcessState.next
 
     @staticmethod
     def yolo(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
-        print('--> Yolo Process')
         boxes, classIDs, confidences = LPModel.detect(frameData.frame)
 
         for objIndex, classID in enumerate(classIDs):
@@ -50,8 +50,6 @@ class Process:
     @staticmethod
     def findCorresponding(reverse: bool = False):
         def __findCorresponding(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
-            print('--> Find Corresponding License Plate Process')
-
             # 定義邊界和方向
             edge = tvideo.frameCount if reverse else 0
             direction = 1 if reverse else -1
@@ -74,7 +72,6 @@ class Process:
 
     @staticmethod
     def drawBoxes(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
-        # print('--> Draw Boxes License Plate')
         colors = getColors(tvideo.lastCodename)
 
         resultImage = frameData.frame
@@ -125,8 +122,8 @@ class Process:
         def __findNumber(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
             for lp in frameData.licensePlates:
                 if lp.number == number:
-                    print(f'找到對應車牌號碼: {number}')
-                    print(f'在 {frameIndex} 幀, {frameIndex / tvideo.fps} 秒')
+                    INFO(f'found')
+                    INFO(f'在 {frameIndex} 幀, {frameIndex / tvideo.fps} 秒')
                     tvideo.targetLicensePlateCodename = lp.codename
                     return ProcessState.stop
             return ProcessState.next
@@ -169,7 +166,6 @@ class Process:
     
     @staticmethod
     def cocoDetect(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
-        print('-> coco detect')
         boxes, classIDs, confidences = coco.detect(frameData.frame)
         for objIndex, classID in enumerate(classIDs):
             box = boxes[objIndex]
@@ -187,7 +183,6 @@ class Process:
 
     @staticmethod
     def test(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
-        print('sleep 5s')
         time.sleep(5)
         return ProcessState.next
 
@@ -259,9 +254,7 @@ class Process:
 
         def drivingDirection(p1: List[int], p2: List[int]) -> Tuple[float, ...]:
             vector: Tuple[int, ...] = tuple(p1[i] - p2[i] for i in range(0, len(p1)))
-            print('v', vector)
             norm = math.sqrt(sum([v ** 2 for v in vector]))
-            print('norm', norm)
             unitVector = tuple(v / norm if norm != 0 else 0 for v in vector)
             return unitVector
         
@@ -275,9 +268,7 @@ class Process:
         shift = (tvideo.width - 100, 100)
 
         unitVector = drivingDirection(position1, position2)
-        print(unitVector)
         unitVector = tuple(int(unitVector[i] * 15 + shift[i]) for i in range(0, len(unitVector)))
-        print(unitVector)
         frameData.frame = cv2.arrowedLine(frameData.frame, shift, unitVector, (0, 0, 255), 3) 
 
         return ProcessState.next

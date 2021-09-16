@@ -119,10 +119,10 @@ class LicensePlateData:
 			e += 0.0001
 			approx = cv2.approxPolyDP(maxCnt, e * l, True)
 			if len(approx) == 4:
-				print(f"e = {e}")
+				# print(f"e = {e}")
 				break
 			if len(approx) < 4:
-				print(f"e = {e} 擬合不到 4 個點")
+				# print(f"e = {e} 擬合不到 4 個點")
 				# 沒矯正結果
 				return []
 		# 重新排序4個角點的順序
@@ -437,7 +437,6 @@ class TVideo:
 
 				for i in idxs:
 					if i < 0:
-						print('break')
 						return
 					for process in processes:
 						state = process(self.framesData[i], i, self)
@@ -457,7 +456,6 @@ class TVideo:
 				
 				for i in idxs:
 					if i < 0:
-						print('break')
 						return
 					for process in processes:
 						state = process(self.framesData[i], i, self)
@@ -535,7 +533,6 @@ class TVideo:
 
 	#! end = -1?
 	def save(self, path: str, start: int = None, end: int = None, fps: float = None, fourccType: str = 'mp4v'):
-		print(start, end)
 		if fps is None: fps = self.fps
 		fourcc = cv2.VideoWriter_fourcc(*fourccType)
 		out = cv2.VideoWriter(path, fourcc, fps, (int(self.width), int(self.height)))
@@ -595,6 +592,17 @@ class TVideoSchedule:
 		def __range(indexs: List[indexType], frameCount: int) -> indexType:
 			return list(range(start, end, step))
 		return __range
+	
+	@staticmethod
+	def forEachStepAll(step: int):
+		def __forEachStepAll(indexs: List[indexType], frameCount: int) -> indexType:
+			if len(indexs) > 0: return -1
+			resultIndexs = []
+			for i in range(0, step):
+				resultIndexs += list(range(i, frameCount, step))
+			return resultIndexs
+			# return TVideoSchedule.checkIndexOutOfRange(indexs[-1] + step, frameCount)
+		return __forEachStepAll
 
 	@staticmethod
 	def random(indexs: List[indexType], frameCount: int) -> indexType:

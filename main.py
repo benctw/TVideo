@@ -1,17 +1,15 @@
 import math
-# import numpy as np
-# import cv2
+import time
 import os
 import sys
 import argparse
 import Levenshtein
-from rich.progress import track
-from enum import Enum, auto
 
 import config as glo
 from models.helper import *
 from models.TVideo.TVideo import *
 from models.TVideo.Process import *
+from models.communicate import *
 
 
 def buildArgparser():
@@ -77,19 +75,21 @@ def detect(args):
 
 # 執行 findNumber
 def findNumber(args):
+	INFO('run findNumber')
 	paths = args.data[::2]
 	numbers = args.data[1::2]
-	print(paths, '\n', numbers)
+	INFO(paths)
+	INFO(numbers)
 	tVideo = TVideo(paths[0])
 	tVideo.runProcess(
-		TVideoSchedule.random, 
+		TVideoSchedule.index(200), 
 		Process.showIndex, 
 		Process.yolo, 
 		Process.calcLicensePlateData, 
 		Process.findCorresponding(), 
 		Process.findTargetNumber(numbers)
 	)
-	send('success', 'findNumber', 0.25)
+	INFO(0.25)
 	currentIndex = tVideo.currentIndex
 	tVideo.runProcess(
 		TVideoSchedule.forward(currentIndex + 1, 5), 
@@ -98,7 +98,7 @@ def findNumber(args):
 		Process.findCorresponding(), 
 		Process.hasCorrespondingTargetLicensePlate
 	)
-	send('success', 'findNumber', 0.50)
+	INFO(0.50)
 	tVideo.runProcess(
 		TVideoSchedule.backward(currentIndex - 1, 5), 
 		Process.showIndex, 
@@ -106,7 +106,7 @@ def findNumber(args):
 		Process.findCorresponding(reverse=True), 
 		Process.hasCorrespondingTargetLicensePlate
 	)
-	send('success', 'findNumber', 0.75)
+	INFO(0.75)
 	tVideo.runProcess(
 		TVideoSchedule.forEach, 
 		Process.drawBoxes,
@@ -115,10 +115,12 @@ def findNumber(args):
 		Process.updateRangeOfTargetLicensePlate,
 	)
 	tVideo.save(outputDir + '1.mp4')
-	send('success', 'findNumber', 1, {
+	INFO(1)
+	INFO({
 		'start': tVideo.start,
 		'end': tVideo.end
 	})
+	os._exit(0)
 
 #!
 # 執行 yolo
@@ -166,10 +168,10 @@ def drivingDirection(p1, p2):
 def main():
 	if len(sys.argv) > 1:
 		buildArgparser()
-
-	tVideo = TVideo('D:/chiziSave/違規影片/04-紅燈越線/越線04(267-MAE，095248-095254).mp4')
+	start = time.process_time()
+	tVideo = TVideo('C:/Users/zT3Tz/Documents/違規影片/04-紅燈越線/越線04(267-MAE，095248-095254).mp4')
 	tVideo.runProcess(
-		TVideoSchedule.random, 
+		TVideoSchedule.forEachStepAll(30), 
 		Process.showIndex, 
 		Process.yolo, 
 		# Process.cocoDetect, 
@@ -185,7 +187,7 @@ def main():
 		Process.showIndex, 
 		Process.yolo, 
 		# Process.cocoDetect,
-		Process.calcLicensePlateData, 
+		# Process.calcLicensePlateData, 
 		Process.findCorresponding(), 
 		Process.hasCorrespondingTargetLicensePlate
 	)
@@ -194,7 +196,7 @@ def main():
 		Process.showIndex, 
 		Process.yolo, 
 		# Process.cocoDetect,
-		Process.calcLicensePlateData, 
+		# Process.calcLicensePlateData, 
 		Process.findCorresponding(reverse=True), 
 		Process.hasCorrespondingTargetLicensePlate
 	)
@@ -204,10 +206,12 @@ def main():
 		Process.correspondingTrafficLights,
 		Process.drawCurrentTrafficLightState,
 		Process.updateRangeOfTargetLicensePlate,
-		Process.calcPathDirection
+		# Process.calcPathDirection
 	)
 	# tVideo.runProcess(TVideoSchedule.forEach, Process.drawPath)
-	tVideo.save('D:/chiziSave/detect-result/越線04(267-MAE，095248-095254)7.mp4')
+	tVideo.save('C:/Users/zT3Tz/Documents/detect-result/越線04(267-MAE，095248-095254)8.mp4')
+	end = time.process_time()
+	print(end - start)
 
 
 if __name__ == '__main__':

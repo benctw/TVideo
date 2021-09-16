@@ -3,6 +3,7 @@ import numpy as np
 import cv2
 from ..CVModel.CVModel import CVModel, DetectResult
 # import config as cfg
+from ..communicate import *
 
 # 應該做成抽象對象，被繼承
 class YoloModel(CVModel):
@@ -18,7 +19,7 @@ class YoloModel(CVModel):
 		minConfidence: float = 0.2
 	):
 		super(YoloModel, self).__init__()
-		print("[INFO] Loading YOLO Model...")
+		INFO("Loading YOLO Model")
 		self.namesPath     = namesPath
 		self.configPath    = configPath
 		self.weightsPath   = weightsPath
@@ -35,7 +36,7 @@ class YoloModel(CVModel):
 		self.net.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
 		self.net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
 		self.outputLayerNames = [self.net.getLayerNames()[i[0] - 1] for i in self.net.getUnconnectedOutLayers()]
-		print("[INFO] Loaded YOLO Model!")
+		INFO("Loaded YOLO Model!")
 
 	# (cx, cy, w, h) -> (p1x, p1y, p2x, p2y)
 	@staticmethod
