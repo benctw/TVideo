@@ -1,6 +1,6 @@
 import re
 from typing import List, Tuple, Any, Union, Callable
-from enum import Enum
+from enum import Enum, auto
 import easyocr
 import numpy as np
 import cv2
@@ -348,12 +348,15 @@ class TFrameData:
 				return lp.centerPosition
 		return None
 	
-
+class Direct(Enum):
+    right = auto()
+    left = auto()
+    straight = auto()
 
 class ProcessState(Enum):
-	next = 1
-	nextLoop = 2
-	stop = 3
+	next = auto()
+	nextLoop = auto()
+	stop = auto()
 
 ForEachFrameData = Callable[[TFrameData, int, Any], ProcessState]
 indexType = Union[int, List[int]]
@@ -387,6 +390,12 @@ class TVideo:
 		self.currentIndex: int = -1
 		# 目標車牌的codename
 		self.targetLicensePlateCodename: int = -1
+
+		# 路徑方向
+		self.directs: List[Direct] = []
+
+		# 紅燈加車牌的幀位置
+		self.trafficLightStateIsRedFrameIndexs = []
 
 		# # 每幀會處理的流程 #! 沒有用到
 		# self.process: OrderedDict[str, ForEachFrameData] = collections.OrderedDict()
@@ -508,6 +517,7 @@ class TVideo:
 		return path
 	
 	def getVaildTargetLicensePlatePath(self) -> List[List[int]]:
+		paths = []
 		path = []
 		#! 把none刪掉，回傳多段路徑
 		for frameData in self.framesData:
@@ -516,9 +526,12 @@ class TVideo:
 				if lp.codename == self.targetLicensePlateCodename and hasattr(lp, 'centerPosition'):
 					path.append(lp.centerPosition)
 					hasTargetLicensePlate = True
-			if not hasTargetLicensePlate:
-				path.append(None)
-		return path
+			# if not hasTargetLicensePlate:
+			# 	# if len(path) == 0:
+			# 		paths.append(path)
+			# 		# path.clear()
+		paths.append(path)
+		return paths
 
 	
 	#!
@@ -532,7 +545,7 @@ class TVideo:
 		return []
 
 	#! end = -1?
-	def save(self, path: str, start: int = None, end: int = None, fps: float = None, fourccType: str = 'mp4v'):
+	def save(self, path: str, start: int = None, end: int = None, fps: float = None, fourccType: str = 'avc1'):
 		if fps is None: fps = self.fps
 		fourcc = cv2.VideoWriter_fourcc(*fourccType)
 		out = cv2.VideoWriter(path, fourcc, fps, (int(self.width), int(self.height)))

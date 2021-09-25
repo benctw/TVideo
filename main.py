@@ -3,7 +3,6 @@ import time
 import os
 import sys
 import argparse
-import Levenshtein
 
 import config as glo
 from models.helper import *
@@ -154,8 +153,8 @@ def smoke(args):
 
 # 比較車牌號碼 返回相似度 在0~1之間
 #! 提升速度，可能會直接對比
-def compareLPNumber(targetLPNumber, detectLPNumber):
-	return 1 if targetLPNumber == detectLPNumber else Levenshtein.ratio(detectLPNumber, targetLPNumber)
+# def compareLPNumber(targetLPNumber, detectLPNumber):
+# 	return 1 if targetLPNumber == detectLPNumber else Levenshtein.ratio(detectLPNumber, targetLPNumber)
 
 # 判斷車輛行駛方向
 def drivingDirection(p1, p2):
@@ -188,6 +187,7 @@ def main():
 		Process.yolo, 
 		# Process.cocoDetect,
 		# Process.calcLicensePlateData, 
+		Process.calcCenterPosition,
 		Process.findCorresponding(), 
 		Process.hasCorrespondingTargetLicensePlate
 	)
@@ -197,6 +197,7 @@ def main():
 		Process.yolo, 
 		# Process.cocoDetect,
 		# Process.calcLicensePlateData, 
+		Process.calcCenterPosition,
 		Process.findCorresponding(reverse=True), 
 		Process.hasCorrespondingTargetLicensePlate
 	)
@@ -206,12 +207,22 @@ def main():
 		Process.correspondingTrafficLights,
 		Process.drawCurrentTrafficLightState,
 		Process.updateRangeOfTargetLicensePlate,
-		# Process.calcPathDirection
 	)
+	# 只有一次
+	tVideo.runProcess(
+		TVideoSchedule.forEach,
+		Process.calcPathDirection
+	)
+	tVideo.runProcess(
+		TVideoSchedule.forEach,
+		Process.intersectionOfLPAndTL
+	)
+
 	# tVideo.runProcess(TVideoSchedule.forEach, Process.drawPath)
 	tVideo.save('C:/Users/zT3Tz/Documents/detect-result/越線04(267-MAE，095248-095254)8.mp4')
 	end = time.process_time()
 	print(end - start)
+	print(tVideo.directs)
 
 
 if __name__ == '__main__':
