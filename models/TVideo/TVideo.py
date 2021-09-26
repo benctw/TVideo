@@ -8,51 +8,50 @@ from rich.progress import track
 import random
 import pickle
 
-from models.CVModel.CVModel import CVModel, DetectResult, DetectResults
+from models.CVModel.CVModel import CVModel
 
 Point = Tuple[int, int]
 Box = Tuple[Point, Point]
 
 class TObj(Enum):
-	Undefined = 'Undefined'
-	Vehicle = 'Vehicle'
+	Undefined    = 'Undefined'
+	Vehicle      = 'Vehicle'
 	LicensePlate = 'LicensePlate'
 	TrafficLight = 'TrafficLight'
-	Lane = 'Lane'
+	Lane         = 'Lane'
 
 
 from abc import ABC, abstractmethod
 class TObject(ABC):
 	def __init__(
 		self,
-		image: np.ndarray, 
-		box  : List,
-		confidence: float
+		image      : np.ndarray, 
+		box        : List,
+		confidence : float
 	):
-		self.image = image
-		self.box = box
-		self.confidence = confidence
+		self.image       = image
+		self.box         = box
+		self.confidence  = confidence
 		self.label: TObj = TObj.Undefined
 
 # 一載具的數據
 class VehicleData:
 	def __init__(
 		self, 
-		image: np.ndarray, 
-		box  : List,
-		confidence: float,
-		type : str
+		image      : np.ndarray, 
+		box        : List,
+		confidence : float,
+		type       : str
 	):
-		self.image = image
-		self.box = box
-		self.confidence = confidence
-		self.type = type
+		self.image       = image
+		self.box         = box
+		self.confidence  = confidence
+		self.type        = type
 		self.label: TObj = TObj.Vehicle
 		# self.calc()
 
 	# 生成之後計算的數據
 	def calc(self):
-		self.cornerPoints = ...
 		# 載具質心點位置
 		self.centerPosition: List = []
 		# 方向
@@ -71,13 +70,13 @@ class LicensePlateData:
 
 	def __init__(
 		self, 
-		image: np.ndarray, 
-		box  : List,
-		confidence: float
+		image      : np.ndarray, 
+		box        : List,
+		confidence : float
 	):
-		self.image = image
-		self.box = box
-		self.confidence = confidence
+		self.image       = image
+		self.box         = box
+		self.confidence  = confidence
 		self.label: TObj = TObj.LicensePlate
 
 		self.number = ''
@@ -86,13 +85,13 @@ class LicensePlateData:
 	# 生成之後計算的數據
 	def calc(self):
 		# 車牌的四個角點
-		self.cornerPoints  : List = self.getCornerPoints(self.image)
+		self.cornerPoints   : List = self.getCornerPoints(self.image)
 		# 矯正的圖像
-		self.correctImage  : np.ndarray = self.correct(self.image, self.cornerPoints, int(150 * self.ratioOfLicensePlate), 150)
+		self.correctImage   : np.ndarray = self.correct(self.image, self.cornerPoints, int(150 * self.ratioOfLicensePlate), 150)
 		# 車牌質心點位置
-		self.centerPosition: List[int] = CVModel.getCenterPosition(self.cornerPoints)
+		self.centerPosition : List[int] = CVModel.getCenterPosition(self.cornerPoints)
 		# 車牌號碼
-		self.number        : str = self.getNumber(self.correctImage)
+		self.number         : str = self.getNumber(self.correctImage)
 	
 	@staticmethod
 	def getCornerPoints(image: np.ndarray) -> List:
@@ -184,13 +183,13 @@ class TrafficLightState(Enum):
 class TrafficLightData:
 	def __init__(
 		self,
-		image: np.ndarray,
-		box  : List,
+		image     : np.ndarray,
+		box       : List,
 		confidence: float
   ):
-		self.image = image
-		self.box = box
-		self.confidence = confidence
+		self.image       = image
+		self.box         = box
+		self.confidence  = confidence
 		self.label: TObj = TObj.TrafficLight
 
 		self.calc()
@@ -222,16 +221,16 @@ class TrafficLightData:
 		yellowBlur = cv2.medianBlur(yellowThresh, 5)
 		greenBlur  = cv2.medianBlur(greenThresh, 5)
 
-		red = cv2.countNonZero(redBlur)
+		red    = cv2.countNonZero(redBlur)
 		yellow = cv2.countNonZero(yellowBlur)
 		green  = cv2.countNonZero(greenBlur)
 
 		maxIndex = np.argmax([red, yellow, green])
 
-		if maxIndex == 0: return TrafficLightState.red, redBlur
-		elif maxIndex == 1: return TrafficLightState.yellow, yellowBlur
-		elif maxIndex == 2: return TrafficLightState.green, greenBlur
-		else: return TrafficLightState.unknow, np.zeros((0, 0), np.uint8)
+		if   maxIndex == 0 : return TrafficLightState.red,    redBlur
+		elif maxIndex == 1 : return TrafficLightState.yellow, yellowBlur
+		elif maxIndex == 2 : return TrafficLightState.green,  greenBlur
+		else               : return TrafficLightState.unknow, np.zeros((0, 0), np.uint8)
 
 	#將Blur圖片分三等份
 	@staticmethod
@@ -254,16 +253,16 @@ class TrafficLightData:
 	@staticmethod
 	def cntsOfeachPart(threePartImgs: List[np.ndarray]) -> TrafficLightState:
 
-		partOneCnts = cv2.countNonZero(threePartImgs[0])
-		partTwoCnts = cv2.countNonZero(threePartImgs[1])
+		partOneCnts   = cv2.countNonZero(threePartImgs[0])
+		partTwoCnts   = cv2.countNonZero(threePartImgs[1])
 		partThreeCnts = cv2.countNonZero(threePartImgs[2])
 
 		cnts = max(partOneCnts, partTwoCnts, partThreeCnts)
 
-		if cnts == partOneCnts : return TrafficLightState.red
-		elif cnts == partTwoCnts : return TrafficLightState.yellow
+		if   cnts == partOneCnts   : return TrafficLightState.red
+		elif cnts == partTwoCnts   : return TrafficLightState.yellow
 		elif cnts == partThreeCnts : return TrafficLightState.green
-		else: return TrafficLightState.unknow
+		else                       : return TrafficLightState.unknow
 
 	@staticmethod
 	def ColorDectect(image: np.ndarray) -> TrafficLightState:
@@ -272,24 +271,22 @@ class TrafficLightData:
 		threePartImgs = TrafficLightData.threePartOfTrafficLight(blur)
 		colorOfPartState = TrafficLightData.cntsOfeachPart(threePartImgs)
 		
-		if lightColorState == TrafficLightState.red and colorOfPartState == TrafficLightState.red: return TrafficLightState.red
-		elif lightColorState == TrafficLightState.yellow and colorOfPartState == TrafficLightState.yellow: return TrafficLightState.yellow
-		elif lightColorState == TrafficLightState.green and colorOfPartState == TrafficLightState.green: return TrafficLightState.green
-		else: return TrafficLightState.unknow
+		if   lightColorState == colorOfPartState : return lightColorState
+		else                                     : return TrafficLightState.unknow
 
 
 # 車道線數據
 class LaneData:
 	def __init__(
 		self,
-		image: np.ndarray,
-		lane: List[List[int]],
-		# box  : List,
-		confidence: float,
+		image      : np.ndarray,
+		lane       : List[List[int]],
+		# box        : List,
+		confidence : float,
 	):
-		self.image = image,
-		self.lane = lane
-		self.confidence = confidence
+		self.image       = image,
+		self.lane        = lane
+		self.confidence  = confidence
 		self.label: TObj = TObj.Lane
 	
 	def calc(self):
@@ -303,44 +300,17 @@ class LaneData:
 class TFrameData:
 	def __init__(
 		self, 
-		frame                 : np.ndarray, 
-		# vehicles              : List[VehicleData], 
-		# licensePlates         : List[LicensePlateData], 
-		# trafficLights         : List[TrafficLightData], 
-		# hasTrafficLight       : bool, 
-		# hasLicensePlate       : bool, 
-		# hasMatchTargetLPNumber: bool, 
+		frame: np.ndarray, 
 	):
-		# 圖像
-		self.frame                  = frame
-		# self.editedFrame: np.ndarray = frame.copy()
-		# self.temp: Any = ''
-		# 載具數據
-		self.vehicles: List[VehicleData] = []
-		# 車牌數據
+		self.frame = frame
+		self.vehicles     : List[VehicleData] = []
 		self.licensePlates: List[LicensePlateData] = []
-		# 紅綠燈數據
 		self.trafficLights: List[TrafficLightData] = []
-		self.allClass: List[List[Any]] = [self.vehicles, self.licensePlates, self.trafficLights]
-		self.numOfClass: int = len(self.allClass)
-		self.currentTrafficLightState: TrafficLightState = TrafficLightState.unknow
-		# # 有沒有紅綠燈
-		# self.hasTrafficLight        = hasTrafficLight
-		# # 有沒有車牌
-		# self.hasLicensePlate        = hasLicensePlate
-		# 是否匹配到車牌號碼
-		# self.hasMatchTargetLPNumber = hasMatchTargetLPNumber
+		self.lanes        : List[LaneData] = []
 
-	def addObj(self, className: str, data: Any):
-		if hasattr(self, className):
-			# setattr(self, className, getattr(self, className, [data]))
-			attr = getattr(self, className)
-			#! 不知道為什麼會有 None
-			if attr is None:
-				attr = []
-			setattr(self, className, attr.append(data))
-		else:
-			setattr(self, className, [data])
+		self.allClass     : List[List[Any]] = [self.vehicles, self.licensePlates, self.trafficLights]
+		self.numOfClass   : int = len(self.allClass)
+		self.currentTrafficLightState: TrafficLightState = TrafficLightState.unknow
 	
 	def getTargetLicensePlatePosition(self, targetLicensePlateCodename) -> Union[List[int], None]:
 		for lp in self.licensePlates:
@@ -349,14 +319,14 @@ class TFrameData:
 		return None
 	
 class Direct(Enum):
-    right = auto()
-    left = auto()
+    right    = auto()
+    left     = auto()
     straight = auto()
 
 class ProcessState(Enum):
-	next = auto()
+	next     = auto()
 	nextLoop = auto()
-	stop = auto()
+	stop    = auto()
 
 ForEachFrameData = Callable[[TFrameData, int, Any], ProcessState]
 indexType = Union[int, List[int]]
@@ -371,14 +341,13 @@ class TVideo:
 		self.path = path
 
 		videoDetails = self.__getVideoDetails(path)
-		self.frames    : List[np.ndarray] = videoDetails[0]
 		self.width     : int = videoDetails[1]
 		self.height    : int = videoDetails[2]
 		self.fps       : float = videoDetails[3]
 		self.frameCount: int   = videoDetails[4]
 
 		# 多幀數據（從 video 初始化）
-		self.framesData: List[TFrameData] = [TFrameData(frame) for frame in track(self.frames, '初始化每幀數據')]
+		self.framesData: List[TFrameData] = [TFrameData(frame) for frame in track(videoDetails[0], '初始化每幀數據')]
 		# 最後使用的代號
 		self.lastCodename = lastCodename
 
@@ -395,12 +364,7 @@ class TVideo:
 		self.directs: List[Direct] = []
 
 		# 紅燈加車牌的幀位置
-		self.trafficLightStateIsRedFrameIndexs = []
-
-		# # 每幀會處理的流程 #! 沒有用到
-		# self.process: OrderedDict[str, ForEachFrameData] = collections.OrderedDict()
-		# # 上一個流程返回的結果 #! 沒有用到
-		# self.previousProcessResult: Any = None
+		self.trafficLightStateIsRedFrameIndexs: List[int] = []
 
 	@staticmethod
 	def __getVideoDetails(path: str) -> Any:
@@ -418,9 +382,9 @@ class TVideo:
 		# 	frames.append(frame)
 		# 	rval, frame = videoCapture.read()
 		
-		width     : int = int(videoCapture.get(cv2.CAP_PROP_FRAME_WIDTH))
-		height    : int = int(videoCapture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-		fps       : float = videoCapture.get(cv2.CAP_PROP_FPS)
+		width  : int = int(videoCapture.get(cv2.CAP_PROP_FRAME_WIDTH))
+		height : int = int(videoCapture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+		fps    : float = videoCapture.get(cv2.CAP_PROP_FPS)
 		videoCapture.release()
 		return [frames, width, height, fps, frameCount]
 
@@ -450,9 +414,9 @@ class TVideo:
 					for process in processes:
 						state = process(self.framesData[i], i, self)
 						self.currentIndex = i
-						if state == ProcessState.next: pass
+						if   state == ProcessState.next    : pass
 						elif state == ProcessState.nextLoop: break
-						elif state == ProcessState.stop: return
+						elif state == ProcessState.stop    : return
 		# 有限
 		else:
 			for _ in track(range(0, maxTimes), "run process"):
@@ -460,7 +424,7 @@ class TVideo:
 				indexs.append(frameIndex)
 				
 				idxs: List[int] = []
-				if type(frameIndex) is int: idxs.append(frameIndex)
+				if   type(frameIndex) is int : idxs.append(frameIndex)
 				elif type(frameIndex) is list: idxs = frameIndex
 				
 				for i in idxs:
@@ -469,9 +433,9 @@ class TVideo:
 					for process in processes:
 						state = process(self.framesData[i], i, self)
 						self.currentIndex = i
-						if state == ProcessState.next: pass
+						if   state == ProcessState.next    : pass
 						elif state == ProcessState.nextLoop: break
-						elif state == ProcessState.stop: return
+						elif state == ProcessState.stop    : return
 		return self
 
 	#!
@@ -516,6 +480,7 @@ class TVideo:
 				path.append(None)
 		return path
 	
+	#!
 	def getVaildTargetLicensePlatePath(self) -> List[List[int]]:
 		paths = []
 		path = []
@@ -560,8 +525,6 @@ class TVideo:
 			
 	# def loadData(self, path: str):
 		
-
-
 
 class TVideoSchedule:
     
@@ -620,9 +583,7 @@ class TVideoSchedule:
 	@staticmethod
 	def random(indexs: List[indexType], frameCount: int) -> indexType:
 		if len(indexs) > 0: return -1
-		li = list(range(0, frameCount))
-		random.shuffle(li)
-		return li
+		return random.shuffle(list(range(0, frameCount)))
 	
 	@staticmethod
 	def randomIndex(indexs: List[indexType], frameCount: int) -> indexType:

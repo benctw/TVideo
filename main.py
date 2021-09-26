@@ -75,7 +75,7 @@ def detect(args):
 # 執行 findNumber
 def findNumber(args):
 	INFO('run findNumber')
-	paths = args.data[::2]
+	paths   = args.data[::2]
 	numbers = args.data[1::2]
 	INFO(paths)
 	INFO(numbers)
@@ -117,7 +117,7 @@ def findNumber(args):
 	INFO(1)
 	INFO({
 		'start': tVideo.start,
-		'end': tVideo.end
+		'end'  : tVideo.end
 	})
 	os._exit(0)
 
@@ -158,15 +158,15 @@ def smoke(args):
 
 # 判斷車輛行駛方向
 def drivingDirection(p1, p2):
-	vector = (p1[i] - p2[i] for i in range(0, len(p1)))
-	norm = math.sqrt(sum([v ** 2 for v in vector]))
+	vector     = (p1[i] - p2[i] for i in range(0, len(p1)))
+	norm       = math.sqrt(sum([v ** 2 for v in vector]))
 	unitVector = (v / norm for v in vector)
 	return unitVector
 
 
 def main():
-	if len(sys.argv) > 1:
-		buildArgparser()
+	if len(sys.argv) > 1: buildArgparser()
+	
 	start = time.process_time()
 	tVideo = TVideo('C:/Users/zT3Tz/Documents/違規影片/04-紅燈越線/越線04(267-MAE，095248-095254).mp4')
 	tVideo.runProcess(

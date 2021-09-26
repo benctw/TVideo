@@ -33,11 +33,9 @@ class Process:
             box = boxes[objIndex]
             confidence = confidences[objIndex]
             # 紅綠燈
-            if classID == 0:
-                frameData.trafficLights.append(TrafficLightData(CVModel.crop(frameData.frame, box), box, confidence))
+            if   classID == 0: frameData.trafficLights.append(TrafficLightData(CVModel.crop(frameData.frame, box), box, confidence))
             # 車牌
-            elif classID == 1:
-                frameData.licensePlates.append(LicensePlateData(CVModel.crop(frameData.frame, box), box, confidence))
+            elif classID == 1: frameData.licensePlates.append(LicensePlateData(CVModel.crop(frameData.frame, box), box, confidence))
         
         return ProcessState.next
     
@@ -50,8 +48,8 @@ class Process:
     @staticmethod
     def calcCenterPosition(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
         for lp in frameData.licensePlates:
-            lp.cornerPoints = lp.getCornerPoints(lp.image)
-            lp.correctImage = lp.correct(lp.image, lp.cornerPoints, int(150 * lp.ratioOfLicensePlate), 150)
+            lp.cornerPoints   = lp.getCornerPoints(lp.image)
+            lp.correctImage   = lp.correct(lp.image, lp.cornerPoints, int(150 * lp.ratioOfLicensePlate), 150)
             lp.centerPosition = CVModel.getCenterPosition(lp.cornerPoints)
         return ProcessState.next
 
@@ -93,16 +91,13 @@ class Process:
                 # 框
                 cv2.rectangle(resultImage, (p1x, p1y), (p2x, p2y), color, 2)
 
-                if obj.label is TObj.LicensePlate:
-                    text = f'{obj.codename} [{obj.number}]'
-                elif obj.label is TObj.TrafficLight:
-                    text = f'{obj.codename} {obj.state}'
-                else:
-                    text = '{} {}({:.0f}%)'.format(obj.codename, obj.label, obj.confidence * 100)
+                if   obj.label is TObj.LicensePlate: text = f'{obj.codename} [{obj.number}]'
+                elif obj.label is TObj.TrafficLight: text = f'{obj.codename} {obj.state}'
+                else: text = '{} {}({:.0f}%)'.format(obj.codename, obj.label, obj.confidence * 100)
 
                 # 字型設定
-                font = cv2.FONT_HERSHEY_COMPLEX
-                fontScale = 1
+                font          = cv2.FONT_HERSHEY_COMPLEX
+                fontScale     = 1
                 fontThickness = 1
                 # 顏色反相
                 textColor = [255 - c for c in color]
@@ -154,14 +149,14 @@ class Process:
         resultImage = frameData.frame
         text = frameData.currentTrafficLightState.value
         # 字型設定
-        font = cv2.FONT_HERSHEY_COMPLEX
-        fontScale = 1
+        font          = cv2.FONT_HERSHEY_COMPLEX
+        fontScale     = 1
         fontThickness = 1
         
         color = (0, 0, 0)
-        if frameData.currentTrafficLightState is TrafficLightState.red: textColor = (0, 0, 255)
+        if   frameData.currentTrafficLightState is TrafficLightState.red   : textColor = (0, 0, 255)
         elif frameData.currentTrafficLightState is TrafficLightState.yellow: textColor = (0, 255, 255)
-        elif frameData.currentTrafficLightState is TrafficLightState.green: textColor = (0, 255, 0)
+        elif frameData.currentTrafficLightState is TrafficLightState.green : textColor = (0, 255, 0)
         else: textColor = (255, 255, 255)
 
         # 獲取字型尺寸
@@ -186,12 +181,7 @@ class Process:
         for lp in frameData.licensePlates:
             if lp.codename == tvideo.targetLicensePlateCodename:
                 tvideo.start = frameIndex if tvideo.start == 0 else min(tvideo.start, frameIndex)
-                tvideo.end = max(tvideo.end, frameIndex)
-        return ProcessState.next
-
-    @staticmethod
-    def test(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
-        time.sleep(5)
+                tvideo.end   = max(tvideo.end, frameIndex)
         return ProcessState.next
 
     #!
@@ -255,56 +245,31 @@ class Process:
         frameData.frame[0:h, 0:w] = img3
         
         return ProcessState.next
-    
-    # #!
-    # @staticmethod
-    # def calcPathDirection(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
-
-    #     def drivingDirection(p1: List[int], p2: List[int]) -> Tuple[float, ...]:
-    #         vector: Tuple[int, ...] = tuple(p1[i] - p2[i] for i in range(0, len(p1)))
-    #         norm = math.sqrt(sum([v ** 2 for v in vector]))
-    #         unitVector = tuple(v / norm if norm != 0 else 0 for v in vector)
-    #         return unitVector
-        
-    #     if frameIndex + 1 >= tvideo.frameCount: return ProcessState.next
-
-    #     position1 = frameData.getTargetLicensePlatePosition(tvideo.targetLicensePlateCodename)
-    #     position2 = tvideo.framesData[frameIndex + 1].getTargetLicensePlatePosition(tvideo.targetLicensePlateCodename)
-
-    #     if position1 is None or position2 is None: return ProcessState.next
-
-    #     shift = (tvideo.width - 100, 100)
-
-    #     unitVector = drivingDirection(position1, position2)
-    #     unitVector = tuple(int(unitVector[i] * 15 + shift[i]) for i in range(0, len(unitVector)))
-    #     frameData.frame = cv2.arrowedLine(frameData.frame, shift, unitVector, (0, 0, 255), 3) 
-
-    #     return ProcessState.next
 
     @staticmethod
     def calcPathDirection(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
         
         def GetClockAngle(v1, v2):
             # 2個向量的乘積
-            TheNorm = np.linalg.norm(v1)*np.linalg.norm(v2)
+            theNorm = np.linalg.norm(v1) * np.linalg.norm(v2)
             # 外積
-            rho = np.rad2deg(np.arcsin(np.cross(v1, v2)/TheNorm))
+            rho     = np.rad2deg(np.arcsin(np.cross(v1, v2) / theNorm))
             # 內積
-            theta = np.rad2deg(np.arccos(np.dot(v1,v2)/TheNorm))
-            if rho < 0: return - theta
-            else: return theta
+            theta   = np.rad2deg(np.arccos(np.dot(v1, v2) / theNorm))
+            if rho < 0: return -theta
+            else      : return theta
         
         pathList = tvideo.getVaildTargetLicensePlatePath()
         print('pathList', pathList)
         directs = []
         for path in pathList:
             if len(path) == 0: continue
-            v1 = [path[1][0]-path[0][0], path[1][1]-path[0][1]]
+            v1 = [path[1][0]-path[0][0],   path[1][1]-path[0][1]]
             v2 = [path[-1][0]-path[-2][0], path[-1][1]-path[-2][1]]
             theta = GetClockAngle(v1,v2)
-            if theta > 15: directs.append(Direct.right)
+            if   theta > 15 : directs.append(Direct.right)
             elif theta < -15: directs.append(Direct.left)
-            else: directs.append(Direct.straight)
+            else            : directs.append(Direct.straight)
         tvideo.directs = directs
         return ProcessState.stop
 
