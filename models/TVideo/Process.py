@@ -92,7 +92,7 @@ class Process:
                 cv2.rectangle(resultImage, (p1x, p1y), (p2x, p2y), color, 2)
 
                 if   obj.label is TObj.LicensePlate: text = f'{obj.codename} [{obj.number}]'
-                elif obj.label is TObj.TrafficLight: text = f'{obj.codename} {obj.state}'
+                elif obj.label is TObj.TrafficLight: text = f'{obj.codename} {obj.state.value}'
                 else: text = '{} {}({:.0f}%)'.format(obj.codename, obj.label, obj.confidence * 100)
 
                 # 字型設定

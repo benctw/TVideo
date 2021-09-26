@@ -9,7 +9,7 @@ from models.helper import *
 from models.TVideo.TVideo import *
 from models.TVideo.Process import *
 from models.communicate import *
-
+from models.TVideo.Record import Record
 
 def buildArgparser():
 	parser = argparse.ArgumentParser()
@@ -166,7 +166,7 @@ def drivingDirection(p1, p2):
 
 def main():
 	if len(sys.argv) > 1: buildArgparser()
-	
+
 	start = time.process_time()
 	tVideo = TVideo('C:/Users/zT3Tz/Documents/違規影片/04-紅燈越線/越線04(267-MAE，095248-095254).mp4')
 	tVideo.runProcess(
@@ -223,6 +223,10 @@ def main():
 	end = time.process_time()
 	print(end - start)
 	print(tVideo.directs)
+
+	record = Record()
+	print(record.createData(tVideo))
+	record.save(tVideo)
 
 
 if __name__ == '__main__':
