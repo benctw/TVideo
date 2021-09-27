@@ -16,6 +16,20 @@ class dotdict(dict):
                 d[key] = dotdict.deep(d[key])
         return d
 
+# 物品轉字典
+def getDict(d):
+    if isinstance(d, Enum):
+        d = d.name
+    elif hasattr(d, '__dict__'):
+        d = vars(d)
+        for k, v in d.items():
+            d[k] = getDict(v)
+    elif isinstance(d, list):
+        d = [getDict(i) for i in d]
+    elif isinstance(d, tuple):
+        d = tuple(getDict(i) for i in d)
+    return d
+
 def imshow(img, title = ''):
     cv2.imshow(title, img)
     cv2.waitKey(0)
@@ -40,8 +54,8 @@ def curvature(x, y):
         [1,  t_b, t_b**2]
     ])
 
-    a = np.matmul(np.linalg.inv(M),x)
-    b = np.matmul(np.linalg.inv(M),y)
+    a = np.matmul(np.linalg.inv(M), x)
+    b = np.matmul(np.linalg.inv(M), y)
 
     kappa = 2*(a[2]*b[1]-b[2]*a[1])/(a[1]**2.+b[1]**2.)**(1.5)
     return kappa, [b[1],-a[1]]/np.sqrt(a[1]**2.+b[1]**2.)

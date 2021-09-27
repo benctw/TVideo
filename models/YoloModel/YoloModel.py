@@ -9,14 +9,14 @@ from ..communicate import *
 class YoloModel(CVModel):
 	def __init__(
 		self, 
-		namesPath    : str, 
-		configPath   : str, 
-		weightsPath  : str, 
-		inputWidth   : int,
-		inputHeight  : int,
-		confidence   : float = 0.2, 
-		threshold    : float = 0.7, 
-		minConfidence: float = 0.2
+		namesPath     : str, 
+		configPath    : str, 
+		weightsPath   : str, 
+		inputWidth    : int,
+		inputHeight   : int,
+		confidence    : float = 0.2, 
+		threshold     : float = 0.7, 
+		minConfidence : float = 0.2
 	):
 		super(YoloModel, self).__init__()
 		INFO("Loading YOLO Model")
@@ -54,10 +54,10 @@ class YoloModel(CVModel):
 		self.net.setInput(blob)
 		layerOutputs = self.net.forward(self.outputLayerNames)
 
-		boxes      : List[List[int]] = []
-		classIDs   : List[int] = []
-		confidences: List[float] = []
-		NMSIndexs  : List[int] = []
+		boxes       : List[List[int]] = []
+		classIDs    : List[int]       = []
+		confidences : List[float]     = []
+		NMSIndexs   : List[int]       = []
 
 		for output in layerOutputs:
 			for detection in output:
@@ -74,9 +74,9 @@ class YoloModel(CVModel):
 
 		idxs = cv2.dnn.NMSBoxes(boxes, confidences, self.confidence, self.threshold)
 		if len(idxs) > 0:
-			NMSIndexs = idxs.flatten()
-			boxes = [boxes[i] for i in NMSIndexs]
-			classIDs = [classIDs[i] for i in NMSIndexs]
+			NMSIndexs   = idxs.flatten()
+			boxes       = [boxes[i]       for i in NMSIndexs]
+			classIDs    = [classIDs[i]    for i in NMSIndexs]
 			confidences = [confidences[i] for i in NMSIndexs]
 
 		# 不知道為什麼 box 的點會負數，消掉負數
@@ -86,8 +86,7 @@ class YoloModel(CVModel):
 
 	#!
 	def detectImage(self, image: np.ndarray) -> DetectResult:
-		if type(image) is str:
-			image = cv2.imread(image)
+		if type(image) is str: image = cv2.imread(image)
 		result = DetectResult(image, self.labels, self.threshold, self.confidence)
 		( H, W ) = image.shape[:2]
 		blob = cv2.dnn.blobFromImage(image, 1 / 255, (416, 416), swapRB = True, crop = False)

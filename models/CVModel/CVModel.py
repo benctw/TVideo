@@ -14,10 +14,10 @@ class CVModel(ABC):
 		needRelease = False
 		if type(videoCapture) is str:
 			videoCapture = cv2.VideoCapture(videoCapture)
-			needRelease = True
+			needRelease  = True
 		frames = []
-		frame = None
-		rval = False
+		frame  = None
+		rval   = False
 		if videoCapture.isOpened(): 
 			rval, frame = videoCapture.read()
 		while rval:
@@ -64,10 +64,10 @@ class CVModel(ABC):
 		r1p1x, r1p1y, r1p2x, r1p2y = rect1
 		r2p1x, r2p1y, r2p2x, r2p2y = rect2
 
-		if r1p1x > r2p2x: return 0.0
-		if r1p1y > r2p2y: return 0.0
-		if r1p2x < r2p1x: return 0.0
-		if r1p2y < r2p1y: return 0.0
+		if r1p1x > r2p2x : return 0.0
+		if r1p1y > r2p2y : return 0.0
+		if r1p2x < r2p1x : return 0.0
+		if r1p2y < r2p1y : return 0.0
 
 		ip1x, ip1y = [max(r1p1x, r2p1x), max(r1p1y, r2p1y)]
 		ip2x, ip2y = [min(r1p2x, r2p2x), min(r1p2y, r2p2y)]
@@ -117,28 +117,26 @@ class CVModel(ABC):
 class DetectResult:
 	def __init__(
 		self, 
-		image: np.ndarray, 
-		labels: List[str] = [], 
-		threshold: float = 0.2, 
-		confidence: float = 0.2, 
-		colors: List = None
+		image      : np.ndarray, 
+		labels     : List[str] = [], 
+		threshold  : float     = 0.2, 
+		confidence : float     = 0.2, 
+		colors     : List      = None
 	):
-		self.image = image
-		self.labels = labels
-		self.threshold = threshold
+		self.image      = image
+		self.labels     = labels
+		self.threshold  = threshold
 		self.confidence = confidence
-		self.boxes: List[List[int]] = []
-		self.confidences: List[float] = []
-		self.classIDs: List[int] = []
-		self.colors = colors
-		self.NMSIndexs: List[int] = []
+		self.colors     = colors
+		self.boxes       : List[List[int]] = []
+		self.confidences : List[float]     = []
+		self.classIDs    : List[int]       = []
+		self.NMSIndexs   : List[int]       = []
 
 	@staticmethod
 	def checkColor(color):
-		if isinstance(color, (list, tuple)):
-			raise TypeError()
-		if len(color) != 3:
-			raise ValueError("color 長度不為 3")
+		if isinstance(color, (list, tuple)) : raise TypeError()
+		if len(color) != 3                  : raise ValueError("color 長度不為 3")
 
 	def getAutoSelectColors(self):
 		return np.random.randint(0, 255, size = (len(self.labels), 3), dtype = "uint8")
@@ -151,8 +149,7 @@ class DetectResult:
 		return self
 
 	def setColor(self, index, color):
-		if not isinstance(index, (int, str)):
-			raise TypeError
+		if not isinstance(index, (int, str)): raise TypeError
 		self.checkColor(color)
 		if type(index) is str:
 			try:
@@ -202,21 +199,17 @@ class DetectResult:
 	def cropAll(self, classID, indexs):
 		croppedImages = []
 		# 參數接受 label: str 和 classID: int 類型
-		if type(classID) == str:
-			classID = self.labels.index(classID)
-		elif type(classID) != int:
-			raise ValueError('{} 有誤，每個參數都必須是 int 或 str 類型'.format(classID))
+		if   type(classID) == str: classID = self.labels.index(classID)
+		elif type(classID) != int: raise ValueError('{} 有誤，每個參數都必須是 int 或 str 類型'.format(classID))
 
 		for i in range(0, self.count):
-			if (self.classIDs[i] == classID) and (i in indexs):
-				croppedImages.append(self.crop(i))
-			else:
-				croppedImages.append(None)
+			if (self.classIDs[i] == classID) and (i in indexs) : croppedImages.append(self.crop(i))
+			else                                               : croppedImages.append(None)
 		
 		return croppedImages
 
 	def table(self):
-		header = ['Index', 'Label', 'ClassID', 'Box', 'Confidence']
+		header    = ['Index', 'Label', 'ClassID', 'Box', 'Confidence']
 		rowFormat = '{!s:15} {!s:20} {!s:10} {!s:30} {!s:20}'
 		print(rowFormat.format(*header))
 		for i in range(0, self.count):
@@ -235,13 +228,11 @@ class DetectResult:
 			# 框
 			cv2.rectangle(resultImage, (p1x, p1y), (p2x, p2y), color, 2)
 			# 如果沒有定義函數不繪畫字
-			if callbackReturnText is None:
-				return resultImage
+			if callbackReturnText is None: return resultImage
 			# 附帶的字
 			text = callbackReturnText(self.classIDs[i], self.boxes[i], self.confidences[i], i)
 			# 如果沒有信息不繪畫字
-			if text is None:
-				return resultImage
+			if text is None: return resultImage
 			# 字型設定
 			font = cv2.FONT_HERSHEY_COMPLEX
 			fontScale = 1
@@ -277,10 +268,8 @@ class DetectResults:
 		self.colors = colors if colors != None else np.random.randint(0, 255, size = (len(self.labels), 3), dtype = "uint8")
 
 	def add(self, detectResult):
-		if not isinstance(detectResult, DetectResult):
-			raise TypeError("參數必須是 {} 類型".format(DetectResult))
-		if not self.colors is None:
-			detectResult.setColors(self.colors)
+		if not isinstance(detectResult, DetectResult) : raise TypeError("參數必須是 {} 類型".format(DetectResult))
+		if not self.colors is None                    : detectResult.setColors(self.colors)
 		self.detectResults.append(detectResult)
 		return self
 

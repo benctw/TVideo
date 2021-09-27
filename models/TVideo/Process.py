@@ -121,10 +121,11 @@ class Process:
         return ProcessState.next
     
     @staticmethod
-    def findTargetNumber(number: str):
+    def findTargetNumber(number: str = None):
         def __findNumber(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
+            targetNumber = tvideo.number if number is None else number
             for lp in frameData.licensePlates:
-                if lp.number == number:
+                if lp.number == targetNumber:
                     INFO(f'found')
                     INFO(f'在 {frameIndex} 幀, {frameIndex / tvideo.fps} 秒')
                     tvideo.targetLicensePlateCodename = lp.codename
@@ -137,8 +138,8 @@ class Process:
     def correspondingTrafficLights(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
         tlsArea = []
         for tl in frameData.trafficLights:
-            if tl.state is TrafficLightState.unknow: tlsArea.append(0)
-            else: tlsArea.append(CVModel.boxArea(tl.box))
+            if tl.state is TrafficLightState.unknow : tlsArea.append(0)
+            else                                    : tlsArea.append(CVModel.boxArea(tl.box))
         if len(tlsArea) != 0:
             maxAreaIndex = np.argmax(tlsArea)
             frameData.currentTrafficLightState = frameData.trafficLights[maxAreaIndex].state
@@ -147,17 +148,17 @@ class Process:
     @staticmethod
     def drawCurrentTrafficLightState(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
         resultImage = frameData.frame
-        text = frameData.currentTrafficLightState.value
+        text        = frameData.currentTrafficLightState.value
         # 字型設定
         font          = cv2.FONT_HERSHEY_COMPLEX
         fontScale     = 1
         fontThickness = 1
         
         color = (0, 0, 0)
-        if   frameData.currentTrafficLightState is TrafficLightState.red   : textColor = (0, 0, 255)
-        elif frameData.currentTrafficLightState is TrafficLightState.yellow: textColor = (0, 255, 255)
-        elif frameData.currentTrafficLightState is TrafficLightState.green : textColor = (0, 255, 0)
-        else: textColor = (255, 255, 255)
+        if   frameData.currentTrafficLightState is TrafficLightState.red    : textColor = (0, 0, 255)
+        elif frameData.currentTrafficLightState is TrafficLightState.yellow : textColor = (0, 255, 255)
+        elif frameData.currentTrafficLightState is TrafficLightState.green  : textColor = (0, 255, 0)
+        else                                                                : textColor = (255, 255, 255)
 
         # 獲取字型尺寸
         (textW, textH), _ = cv2.getTextSize(text, font, fontScale, fontThickness)
@@ -190,8 +191,8 @@ class Process:
 
         if frameIndex - 1 < 0: return ProcessState.next
 
-        queryImage: np.ndarray = np.array([])
-        trainImage: np.ndarray = np.array([])
+        queryImage : np.ndarray = np.array([])
+        trainImage : np.ndarray = np.array([])
 
         hasTargetLicensePlate = False
         for lp in tvideo.framesData[frameIndex - 1].licensePlates:
@@ -212,10 +213,12 @@ class Process:
         index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
 
         FLANN_INDEX_LSH = 6
-        index_params= dict(algorithm = FLANN_INDEX_LSH,
-                        table_number = 6, # 12
-                        key_size = 12,     # 20
-                        multi_probe_level = 1) #2
+        index_params= dict(
+            algorithm         = FLANN_INDEX_LSH,
+            table_number      = 6,  # 12
+            key_size          = 12, # 20
+            multi_probe_level = 1   #2
+        )
 
         # Initiate SIFT detector
         sift = cv2.SIFT_create()
@@ -224,7 +227,7 @@ class Process:
         kp2, des2 = sift.detectAndCompute(trainImage, None)
         # FLANN parameters
         FLANN_INDEX_KDTREE = 1
-        index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
+        index_params  = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
         search_params = dict(checks=50)   # or pass empty dictionary
         flann = cv2.FlannBasedMatcher(index_params,search_params)
         matches = flann.knnMatch(des1,des2,k=2)
@@ -234,10 +237,12 @@ class Process:
         for i,(m,n) in enumerate(matches):
             if m.distance < 0.7*n.distance:
                 matchesMask[i]=[1,0]
-        draw_params = dict(matchColor = (0,255,0),
-                        singlePointColor = (255,0,0),
-                        matchesMask = matchesMask,
-                        flags = cv2.DrawMatchesFlags_DEFAULT)
+        draw_params = dict(
+            matchColor       = (0,255,0),
+            singlePointColor = (255,0,0),
+            matchesMask      = matchesMask,
+            flags            = cv2.DrawMatchesFlags_DEFAULT
+        )
         img3 = cv2.drawMatchesKnn(queryImage,kp1,trainImage,kp2,matches,None,**draw_params)
 
         h, w = img3.shape[:2]
@@ -256,20 +261,20 @@ class Process:
             rho     = np.rad2deg(np.arcsin(np.cross(v1, v2) / theNorm))
             # 內積
             theta   = np.rad2deg(np.arccos(np.dot(v1, v2) / theNorm))
-            if rho < 0: return -theta
-            else      : return theta
+            if rho < 0 : return -theta
+            else       : return theta
         
         pathList = tvideo.getVaildTargetLicensePlatePath()
         print('pathList', pathList)
         directs = []
         for path in pathList:
             if len(path) == 0: continue
-            v1 = [path[1][0]-path[0][0],   path[1][1]-path[0][1]]
-            v2 = [path[-1][0]-path[-2][0], path[-1][1]-path[-2][1]]
-            theta = GetClockAngle(v1,v2)
-            if   theta > 15 : directs.append(Direct.right)
-            elif theta < -15: directs.append(Direct.left)
-            else            : directs.append(Direct.straight)
+            v1 = [path[ 1][0] - path[ 0][0], path[ 1][1] - path[ 0][1]]
+            v2 = [path[-1][0] - path[-2][0], path[-1][1] - path[-2][1]]
+            theta = GetClockAngle(v1, v2)
+            if   theta > 15  : directs.append(Direct.right)
+            elif theta < -15 : directs.append(Direct.left)
+            else             : directs.append(Direct.straight)
         tvideo.directs = directs
         return ProcessState.stop
 

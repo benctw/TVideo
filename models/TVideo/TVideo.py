@@ -6,7 +6,7 @@ import numpy as np
 import cv2
 from rich.progress import track
 import random
-import pickle
+import os
 
 from models.CVModel.CVModel import CVModel
 
@@ -238,12 +238,12 @@ class TrafficLightData:
 
 		h, w = image.shape[:2]
 		w /= 3
-		partOne = [0, 0, int(w), int(h)]
-		partTwo = [int(w), 0, int(2*w), int(h)]
+		partOne   = [0, 0, int(w), int(h)]
+		partTwo   = [int(w), 0, int(2*w), int(h)]
 		partThree = [int(2*w), 0, int(3*w), int(h)]
 
-		partOneImg = CVModel.crop(image, partOne)
-		partTwoImg = CVModel.crop(image, partTwo)
+		partOneImg   = CVModel.crop(image, partOne)
+		partTwoImg   = CVModel.crop(image, partTwo)
 		partThreeImg = CVModel.crop(image, partThree)
 
 		threePartImgs = [partOneImg, partTwoImg, partThreeImg]
@@ -268,8 +268,8 @@ class TrafficLightData:
 	def ColorDectect(image: np.ndarray) -> TrafficLightState:
 		
 		lightColorState, blur = TrafficLightData.getTrafficLightColor(image)
-		threePartImgs = TrafficLightData.threePartOfTrafficLight(blur)
-		colorOfPartState = TrafficLightData.cntsOfeachPart(threePartImgs)
+		threePartImgs         = TrafficLightData.threePartOfTrafficLight(blur)
+		colorOfPartState      = TrafficLightData.cntsOfeachPart(threePartImgs)
 		
 		if   lightColorState == colorOfPartState : return lightColorState
 		else                                     : return TrafficLightState.unknow
@@ -281,7 +281,6 @@ class LaneData:
 		self,
 		image      : np.ndarray,
 		lane       : List[List[int]],
-		# box        : List,
 		confidence : float,
 	):
 		self.image       = image,
@@ -303,14 +302,13 @@ class TFrameData:
 		frame: np.ndarray, 
 	):
 		self.frame = frame
-		self.vehicles     : List[VehicleData] = []
-		self.licensePlates: List[LicensePlateData] = []
-		self.trafficLights: List[TrafficLightData] = []
-		self.lanes        : List[LaneData] = []
-
-		self.allClass     : List[List[Any]] = [self.vehicles, self.licensePlates, self.trafficLights]
-		self.numOfClass   : int = len(self.allClass)
-		self.currentTrafficLightState: TrafficLightState = TrafficLightState.unknow
+		self.vehicles                 : List[VehicleData]      = []
+		self.licensePlates            : List[LicensePlateData] = []
+		self.trafficLights            : List[TrafficLightData] = []
+		self.lanes                    : List[LaneData]         = []
+		self.allClass                 : List[List[Any]]        = [self.vehicles, self.licensePlates, self.trafficLights]
+		self.numOfClass               : int                    = len(self.allClass)
+		self.currentTrafficLightState : TrafficLightState      = TrafficLightState.unknow
 	
 	def getTargetLicensePlatePosition(self, targetLicensePlateCodename) -> Union[List[int], None]:
 		for lp in self.licensePlates:
@@ -326,7 +324,7 @@ class Direct(Enum):
 class ProcessState(Enum):
 	next     = auto()
 	nextLoop = auto()
-	stop    = auto()
+	stop     = auto()
 
 ForEachFrameData = Callable[[TFrameData, int, Any], ProcessState]
 indexType = Union[int, List[int]]
@@ -335,30 +333,30 @@ indexType = Union[int, List[int]]
 class TVideo:
 	def __init__(
 		self, 
-		path : str,
-		lastCodename: int = 0
+		path         : str,
+		number       : str = '',
+		lastCodename : int = 0
 	):
 		self.path = path
+		self.fileName = os.path.split(path)[1]
+		self.number = number
+		self.saveFilePath = ''
 
 		videoDetails = self.__getVideoDetails(path)
-		self.width     : int = videoDetails[1]
-		self.height    : int = videoDetails[2]
-		self.fps       : float = videoDetails[3]
-		self.frameCount: int   = videoDetails[4]
+		self.width      : int = videoDetails[1]
+		self.height     : int = videoDetails[2]
+		self.fps        : float = videoDetails[3]
+		self.frameCount : int   = videoDetails[4]
 
 		# 多幀數據（從 video 初始化）
 		self.framesData: List[TFrameData] = [TFrameData(frame) for frame in track(videoDetails[0], '初始化每幀數據')]
 		# 最後使用的代號
 		self.lastCodename = lastCodename
 
-		# 裁剪影片的開始
-		self.start: int = 0
-		# 裁剪影片的結束，-1 是最後
-		self.end: int = -1
-		# 剛處理完的index
-		self.currentIndex: int = -1
-		# 目標車牌的codename
-		self.targetLicensePlateCodename: int = -1
+		self.start                      : int = 0
+		self.end                        : int = -1
+		self.currentIndex               : int = -1
+		self.targetLicensePlateCodename : int = -1
 
 		# 路徑方向
 		self.directs: List[Direct] = []
@@ -368,22 +366,20 @@ class TVideo:
 
 	@staticmethod
 	def __getVideoDetails(path: str) -> Any:
+		
 		videoCapture = cv2.VideoCapture(path)
-		frames: List[np.ndarray] = []
-		rval = False
-		frame: np.ndarray = np.array([])
-		frameCount: int = int(videoCapture.get(cv2.CAP_PROP_FRAME_COUNT))
+
+		frames     : List[np.ndarray] = []
+		frame      : np.ndarray       = np.array([])
+		frameCount : int              = int(videoCapture.get(cv2.CAP_PROP_FRAME_COUNT))
+
 		if videoCapture.isOpened():
 			for _ in track(range(0, frameCount), '讀取影片'):
 				rval, frame = videoCapture.read()
 				frames.append(frame)
-
-		# while rval:
-		# 	frames.append(frame)
-		# 	rval, frame = videoCapture.read()
 		
-		width  : int = int(videoCapture.get(cv2.CAP_PROP_FRAME_WIDTH))
-		height : int = int(videoCapture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+		width  : int   = int(videoCapture.get(cv2.CAP_PROP_FRAME_WIDTH))
+		height : int   = int(videoCapture.get(cv2.CAP_PROP_FRAME_HEIGHT))
 		fps    : float = videoCapture.get(cv2.CAP_PROP_FPS)
 		videoCapture.release()
 		return [frames, width, height, fps, frameCount]
@@ -396,8 +392,8 @@ class TVideo:
 		'''
 		if callbackReturnIntex() return a negative number, will stop this process.
 		'''
-		indexs: List[indexType] = []
-		frameIndex: indexType = -1
+		indexs     : List[indexType] = []
+		frameIndex : indexType       = -1
 		# 無限
 		if maxTimes is None:
 			while True:
@@ -405,18 +401,17 @@ class TVideo:
 				indexs.append(frameIndex)
 
 				idxs: List[int] = []
-				if type(frameIndex) is int: idxs.append(frameIndex)
-				elif type(frameIndex) is list: idxs = frameIndex
+				if   type(frameIndex) is int  : idxs.append(frameIndex)
+				elif type(frameIndex) is list : idxs = frameIndex
 
 				for i in idxs:
-					if i < 0:
-						return
+					if i < 0: return self
 					for process in processes:
 						state = process(self.framesData[i], i, self)
 						self.currentIndex = i
-						if   state == ProcessState.next    : pass
-						elif state == ProcessState.nextLoop: break
-						elif state == ProcessState.stop    : return
+						if   state == ProcessState.next     : pass
+						elif state == ProcessState.nextLoop : break
+						elif state == ProcessState.stop     : return self
 		# 有限
 		else:
 			for _ in track(range(0, maxTimes), "run process"):
@@ -424,18 +419,17 @@ class TVideo:
 				indexs.append(frameIndex)
 				
 				idxs: List[int] = []
-				if   type(frameIndex) is int : idxs.append(frameIndex)
-				elif type(frameIndex) is list: idxs = frameIndex
+				if   type(frameIndex) is int  : idxs.append(frameIndex)
+				elif type(frameIndex) is list : idxs = frameIndex
 				
 				for i in idxs:
-					if i < 0:
-						return
+					if i < 0: return self
 					for process in processes:
 						state = process(self.framesData[i], i, self)
 						self.currentIndex = i
-						if   state == ProcessState.next    : pass
-						elif state == ProcessState.nextLoop: break
-						elif state == ProcessState.stop    : return
+						if   state == ProcessState.next     : pass
+						elif state == ProcessState.nextLoop : break
+						elif state == ProcessState.stop     : return self
 		return self
 
 	#!
@@ -451,7 +445,6 @@ class TVideo:
 				IoUs = []
 				for obj1 in objs1:
 					IoUs.append(CVModel.IoU(obj2.box, obj1.box))
-				
 				# 完全沒對應
 				if len(IoUs) == 0:
 					objs2[i].codename = self.newCodename()
@@ -483,7 +476,7 @@ class TVideo:
 	#!
 	def getVaildTargetLicensePlatePath(self) -> List[List[int]]:
 		paths = []
-		path = []
+		path  = []
 		#! 把none刪掉，回傳多段路徑
 		for frameData in self.framesData:
 			hasTargetLicensePlate = False
@@ -511,19 +504,13 @@ class TVideo:
 
 	#! end = -1?
 	def save(self, path: str, start: int = None, end: int = None, fps: float = None, fourccType: str = 'avc1'):
+		self.saveFilePath = path
 		if fps is None: fps = self.fps
 		fourcc = cv2.VideoWriter_fourcc(*fourccType)
 		out = cv2.VideoWriter(path, fourcc, fps, (int(self.width), int(self.height)))
 		for frameData in track(self.framesData[start: end], "saving video"):
 			out.write(frameData.frame)
 		out.release()
-	
-	#!
-	def saveData(self, path: str):
-		with open(path, 'wb') as f:
-			pickle.dump(self, f)
-			
-	# def loadData(self, path: str):
 		
 
 class TVideoSchedule:

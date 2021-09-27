@@ -168,7 +168,7 @@ def main():
 	if len(sys.argv) > 1: buildArgparser()
 
 	start = time.process_time()
-	tVideo = TVideo('C:/Users/zT3Tz/Documents/違規影片/04-紅燈越線/越線04(267-MAE，095248-095254).mp4')
+	tVideo = TVideo('C:/Users/zT3Tz/Documents/違規影片/04-紅燈越線/越線04(267-MAE，095248-095254).mp4', '267MAE')
 	tVideo.runProcess(
 		TVideoSchedule.forEachStepAll(30), 
 		Process.showIndex, 
@@ -176,13 +176,13 @@ def main():
 		# Process.cocoDetect, 
 		Process.calcLicensePlateData, 
 		Process.findCorresponding(), 
-		Process.findTargetNumber('267MAE')
+		Process.findTargetNumber()
 	)
 	# tVideo.saveData('D:/chiziSave/TrafficPolice/saveData.tvd')
 
 	currentIndex = tVideo.currentIndex
 	tVideo.runProcess(
-		TVideoSchedule.forward(currentIndex + 1), 
+		TVideoSchedule.forward(currentIndex + 1, 10), 
 		Process.showIndex, 
 		Process.yolo, 
 		# Process.cocoDetect,
@@ -190,9 +190,8 @@ def main():
 		Process.calcCenterPosition,
 		Process.findCorresponding(), 
 		Process.hasCorrespondingTargetLicensePlate
-	)
-	tVideo.runProcess(
-		TVideoSchedule.backward(currentIndex - 1), 
+	).runProcess(
+		TVideoSchedule.backward(currentIndex - 1, 10), 
 		Process.showIndex, 
 		Process.yolo, 
 		# Process.cocoDetect,
@@ -200,20 +199,16 @@ def main():
 		Process.calcCenterPosition,
 		Process.findCorresponding(reverse=True), 
 		Process.hasCorrespondingTargetLicensePlate
-	)
-	tVideo.runProcess(
+	).runProcess(
 		TVideoSchedule.forEach, 
 		Process.drawBoxes,
 		Process.correspondingTrafficLights,
 		Process.drawCurrentTrafficLightState,
 		Process.updateRangeOfTargetLicensePlate,
-	)
-	# 只有一次
-	tVideo.runProcess(
+	).runProcess(
 		TVideoSchedule.forEach,
 		Process.calcPathDirection
-	)
-	tVideo.runProcess(
+	).runProcess(
 		TVideoSchedule.forEach,
 		Process.intersectionOfLPAndTL
 	)
@@ -223,11 +218,8 @@ def main():
 	end = time.process_time()
 	print(end - start)
 	print(tVideo.directs)
-
 	record = Record()
-	print(record.createData(tVideo))
 	record.save(tVideo)
-
 
 if __name__ == '__main__':
 	main()

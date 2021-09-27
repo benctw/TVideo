@@ -22,3 +22,5 @@ outputDir = __dirname + '/store/output/'
 #     inputWidth  = 416,
 #     inputHeight = 416
 # )
+
+saveRecordPath = __dirname + '/store/records'
