@@ -20,6 +20,11 @@ def getColors(lastCodename):
     return colors
 
 class Process:
+
+    def __init__(self, process) -> None:
+        state = process()
+        return ProcessState.next if state is None else state
+
     @staticmethod
     def showIndex(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
         INFO(f'index: {frameIndex}')

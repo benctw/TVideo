@@ -79,33 +79,41 @@ def findNumber(args):
 	numbers = args.data[1::2]
 	INFO(paths)
 	INFO(numbers)
-	tVideo = TVideo(paths[0])
+	INFO.percent(0)
+	tVideo = TVideo(paths[0], numbers[0])
 	tVideo.runProcess(
-		TVideoSchedule.index(200), 
+		TVideoSchedule.forEachStepAll(30), 
 		Process.showIndex, 
 		Process.yolo, 
+		# Process.cocoDetect, 
 		Process.calcLicensePlateData, 
 		Process.findCorresponding(), 
-		Process.findTargetNumber(numbers)
+		Process.findTargetNumber()
 	)
-	INFO(0.25)
+	INFO.percent(0.25)
 	currentIndex = tVideo.currentIndex
 	tVideo.runProcess(
-		TVideoSchedule.forward(currentIndex + 1, 5), 
+		TVideoSchedule.forward(currentIndex + 1), 
 		Process.showIndex, 
 		Process.yolo, 
+		# Process.cocoDetect,
+		# Process.calcLicensePlateData, 
+		Process.calcCenterPosition,
 		Process.findCorresponding(), 
 		Process.hasCorrespondingTargetLicensePlate
 	)
-	INFO(0.50)
+	INFO.percent(0.50)
 	tVideo.runProcess(
-		TVideoSchedule.backward(currentIndex - 1, 5), 
+		TVideoSchedule.backward(currentIndex - 1), 
 		Process.showIndex, 
 		Process.yolo, 
+		# Process.cocoDetect,
+		# Process.calcLicensePlateData, 
+		Process.calcCenterPosition,
 		Process.findCorresponding(reverse=True), 
 		Process.hasCorrespondingTargetLicensePlate
 	)
-	INFO(0.75)
+	INFO.percent(0.75)
 	tVideo.runProcess(
 		TVideoSchedule.forEach, 
 		Process.drawBoxes,
@@ -113,12 +121,18 @@ def findNumber(args):
 		Process.drawCurrentTrafficLightState,
 		Process.updateRangeOfTargetLicensePlate,
 	)
+	tVideo.runProcess(
+		TVideoSchedule.forEach,
+		Process.calcPathDirection
+	)
+	tVideo.runProcess(
+		TVideoSchedule.forEach,
+		Process.intersectionOfLPAndTL
+	)
 	tVideo.save(outputDir + '1.mp4')
-	INFO(1)
-	INFO({
-		'start': tVideo.start,
-		'end'  : tVideo.end
-	})
+	record = Record()
+	record.save(tVideo)
+	INFO.percent(1)
 	os._exit(0)
 
 #!
@@ -168,6 +182,7 @@ def main():
 	if len(sys.argv) > 1: buildArgparser()
 
 	start = time.process_time()
+	INFO.percent(0)
 	tVideo = TVideo('C:/Users/zT3Tz/Documents/違規影片/04-紅燈越線/越線04(267-MAE，095248-095254).mp4', '267MAE')
 	tVideo.runProcess(
 		TVideoSchedule.forEachStepAll(30), 
@@ -178,8 +193,7 @@ def main():
 		Process.findCorresponding(), 
 		Process.findTargetNumber()
 	)
-	# tVideo.saveData('D:/chiziSave/TrafficPolice/saveData.tvd')
-
+	INFO.percent(0.25)
 	currentIndex = tVideo.currentIndex
 	tVideo.runProcess(
 		TVideoSchedule.forward(currentIndex + 1, 10), 
@@ -190,7 +204,9 @@ def main():
 		Process.calcCenterPosition,
 		Process.findCorresponding(), 
 		Process.hasCorrespondingTargetLicensePlate
-	).runProcess(
+	)
+	INFO.percent(0.50)
+	tVideo.runProcess(
 		TVideoSchedule.backward(currentIndex - 1, 10), 
 		Process.showIndex, 
 		Process.yolo, 
@@ -199,27 +215,30 @@ def main():
 		Process.calcCenterPosition,
 		Process.findCorresponding(reverse=True), 
 		Process.hasCorrespondingTargetLicensePlate
-	).runProcess(
+	)
+	INFO.percent(0.75)
+	tVideo.runProcess(
 		TVideoSchedule.forEach, 
 		Process.drawBoxes,
 		Process.correspondingTrafficLights,
 		Process.drawCurrentTrafficLightState,
 		Process.updateRangeOfTargetLicensePlate,
-	).runProcess(
+	)
+	tVideo.runProcess(
 		TVideoSchedule.forEach,
 		Process.calcPathDirection
-	).runProcess(
+	)
+	tVideo.runProcess(
 		TVideoSchedule.forEach,
 		Process.intersectionOfLPAndTL
 	)
-
-	# tVideo.runProcess(TVideoSchedule.forEach, Process.drawPath)
 	tVideo.save('C:/Users/zT3Tz/Documents/detect-result/越線04(267-MAE，095248-095254)8.mp4')
 	end = time.process_time()
 	print(end - start)
 	print(tVideo.directs)
 	record = Record()
 	record.save(tVideo)
+	INFO.percent(1)
 
 if __name__ == '__main__':
 	main()
