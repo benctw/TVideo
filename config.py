@@ -3,15 +3,15 @@ import os
 
 __dirname = os.path.dirname(os.path.abspath(__file__))
 
+YoloModelFolderPath = 'C:/Users/zT3Tz/Documents/TVideoYoloModel/model'
+
 LPModel = YoloModel(
-    namesPath   = __dirname + "/static/model/lp.names",
-    configPath  = __dirname + "/static/model/lp_yolov4.cfg",
-    # weightsPath = __dirname + "/static/model/lp_yolov4_final.weights"
-    weightsPath = "C:/Users/zT3Tz/Documents/TrafficPoliceYoloModel/model/lp_yolov4_final.weights",
+    namesPath   = YoloModelFolderPath + '/lp.names',
+    configPath  = YoloModelFolderPath + '/lp_yolov4.cfg',
+    weightsPath = YoloModelFolderPath + '/lp_yolov4_final.weights',
     inputWidth  = 608,
     inputHeight = 608
 )
-
 
 outputDir = __dirname + '/store/output/'
 
