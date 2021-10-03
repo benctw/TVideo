@@ -26,18 +26,6 @@ class CVModel(ABC):
 		if needRelease:
 			videoCapture.release()
 		return frames
-
-	@abstractmethod
-	def detectImage(self, image: np.ndarray):
-		raise NotImplemented
-
-	# 根據 interval 的間隔遍歷一遍影片的幀
-	def detectVideo(self, videoCapture: cv2.VideoCapture, interval: int = 1):
-		results = DetectResults(self.labels)
-		self.images = self.getFrames(videoCapture)
-		for image in track(self.images[::interval], "detecting"):
-			results.add(self.detectImage(image))
-		return results
 	
 	# 計算任意點數的質心點位置
 	# points: [point]
@@ -104,13 +92,25 @@ class CVModel(ABC):
 
 	#過曝處理
 	@staticmethod
-	def OverexPose(image: np.ndarray) -> np.ndarray:
-		Overexpose = image.copy()
-		equalizeOver = np.zeros(Overexpose.shape, Overexpose.dtype)
-		equalizeOver[:, :, 0] = cv2.equalizeHist(Overexpose[:, :, 0])
-		equalizeOver[:, :, 1] = cv2.equalizeHist(Overexpose[:, :, 1])
-		equalizeOver[:, :, 2] = cv2.equalizeHist(Overexpose[:, :, 2])
+	def overexPose(image: np.ndarray) -> np.ndarray:
+		overexPose = image.copy()
+		equalizeOver = np.zeros(overexPose.shape, overexPose.dtype)
+		equalizeOver[:, :, 0] = cv2.equalizeHist(overexPose[:, :, 0])
+		equalizeOver[:, :, 1] = cv2.equalizeHist(overexPose[:, :, 1])
+		equalizeOver[:, :, 2] = cv2.equalizeHist(overexPose[:, :, 2])
 		return equalizeOver
+	
+	@abstractmethod
+	def detectImage(self, image: np.ndarray):
+		raise NotImplemented
+	
+	# 根據 interval 的間隔遍歷一遍影片的幀
+	def detectVideo(self, videoCapture: cv2.VideoCapture, interval: int = 1):
+		results = DetectResults(self.labels)
+		self.images = self.getFrames(videoCapture)
+		for image in track(self.images[::interval], "detecting"):
+			results.add(self.detectImage(image))
+		return results
 
 
 ### 改成只針對yolo的結果

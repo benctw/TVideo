@@ -4,7 +4,7 @@ import os
 import sys
 import argparse
 
-import config as glo
+import config as cfg
 from models.helper import *
 from models.TVideo.TVideo import *
 from models.TVideo.Process import *
@@ -55,18 +55,6 @@ def buildArgparser():
 	return
 
 
-success = 'success'
-fail = 'fail'
-
-def send(state, type, progressRate = None, data = None):
-	print({
-		'state': state,
-		'type': type,
-		'progressRate': progressRate,
-		'data': data
-	})
-
-
 # 執行 detect
 def detect(args):
 	print("detect")
@@ -79,10 +67,10 @@ def findNumber(args):
 	numbers = args.data[1::2]
 	INFO(paths)
 	INFO(numbers)
-	INFO.percent(0)
+	INFO.progress(0)
 	tVideo = TVideo(paths[0], numbers[0])
 	tVideo.runProcess(
-		TVideoSchedule.forEachStepAll(30), 
+		TVideoSchedule.forEachStepAll(60), 
 		Process.showIndex, 
 		Process.yolo, 
 		# Process.cocoDetect, 
@@ -90,10 +78,10 @@ def findNumber(args):
 		Process.findCorresponding(), 
 		Process.findTargetNumber()
 	)
-	INFO.percent(0.25)
+	INFO.progress(0.25)
 	currentIndex = tVideo.currentIndex
 	tVideo.runProcess(
-		TVideoSchedule.forward(currentIndex + 1), 
+		TVideoSchedule.forward(currentIndex + 1, 5), 
 		Process.showIndex, 
 		Process.yolo, 
 		# Process.cocoDetect,
@@ -102,9 +90,9 @@ def findNumber(args):
 		Process.findCorresponding(), 
 		Process.hasCorrespondingTargetLicensePlate
 	)
-	INFO.percent(0.50)
+	INFO.progress(0.50)
 	tVideo.runProcess(
-		TVideoSchedule.backward(currentIndex - 1), 
+		TVideoSchedule.backward(currentIndex - 1, 5), 
 		Process.showIndex, 
 		Process.yolo, 
 		# Process.cocoDetect,
@@ -113,7 +101,7 @@ def findNumber(args):
 		Process.findCorresponding(reverse=True), 
 		Process.hasCorrespondingTargetLicensePlate
 	)
-	INFO.percent(0.75)
+	INFO.progress(0.75)
 	tVideo.runProcess(
 		TVideoSchedule.forEach, 
 		Process.drawBoxes,
@@ -122,24 +110,25 @@ def findNumber(args):
 		Process.updateRangeOfTargetLicensePlate,
 	)
 	tVideo.runProcess(
-		TVideoSchedule.forEach,
+		TVideoSchedule.once,
 		Process.calcPathDirection
 	)
 	tVideo.runProcess(
-		TVideoSchedule.forEach,
+		TVideoSchedule.once,
 		Process.intersectionOfLPAndTL
 	)
-	tVideo.save(outputDir + '1.mp4')
 	record = Record()
+	print('dddd:', f'{cfg.outputDir}/result-video_Record_{record.getLastRecordId()}_{tVideo.fileName}.mp4')
+	tVideo.save(f'{cfg.outputDir}/result-video_Record_{record.getLastRecordId() + 1}_{tVideo.fileName}.mp4')
 	record.save(tVideo)
-	INFO.percent(1)
+	INFO.progress(1)
 	os._exit(0)
 
 #!
 # 執行 yolo
 def yolo(args):
 	if not args.image is None:
-		boxes, classIDs, confidences = glo.LPModel.detect(args.image)
+		boxes, classIDs, confidences = cfg.LPModel.detect(args.image)
 
 		
 
@@ -182,7 +171,7 @@ def main():
 	if len(sys.argv) > 1: buildArgparser()
 
 	start = time.process_time()
-	INFO.percent(0)
+	INFO.progress(0)
 	tVideo = TVideo('C:/Users/zT3Tz/Documents/違規影片/04-紅燈越線/越線04(267-MAE，095248-095254).mp4', '267MAE')
 	tVideo.runProcess(
 		TVideoSchedule.forEachStepAll(30), 
@@ -193,7 +182,7 @@ def main():
 		Process.findCorresponding(), 
 		Process.findTargetNumber()
 	)
-	INFO.percent(0.25)
+	INFO.progress(0.25)
 	currentIndex = tVideo.currentIndex
 	tVideo.runProcess(
 		TVideoSchedule.forward(currentIndex + 1, 10), 
@@ -205,7 +194,7 @@ def main():
 		Process.findCorresponding(), 
 		Process.hasCorrespondingTargetLicensePlate
 	)
-	INFO.percent(0.50)
+	INFO.progress(0.50)
 	tVideo.runProcess(
 		TVideoSchedule.backward(currentIndex - 1, 10), 
 		Process.showIndex, 
@@ -216,7 +205,7 @@ def main():
 		Process.findCorresponding(reverse=True), 
 		Process.hasCorrespondingTargetLicensePlate
 	)
-	INFO.percent(0.75)
+	INFO.progress(0.75)
 	tVideo.runProcess(
 		TVideoSchedule.forEach, 
 		Process.drawBoxes,
@@ -225,11 +214,11 @@ def main():
 		Process.updateRangeOfTargetLicensePlate,
 	)
 	tVideo.runProcess(
-		TVideoSchedule.forEach,
+		TVideoSchedule.once,
 		Process.calcPathDirection
 	)
 	tVideo.runProcess(
-		TVideoSchedule.forEach,
+		TVideoSchedule.once,
 		Process.intersectionOfLPAndTL
 	)
 	tVideo.save('C:/Users/zT3Tz/Documents/detect-result/越線04(267-MAE，095248-095254)8.mp4')
@@ -238,7 +227,7 @@ def main():
 	print(tVideo.directs)
 	record = Record()
 	record.save(tVideo)
-	INFO.percent(1)
+	INFO.progress(1)
 
 if __name__ == '__main__':
 	main()

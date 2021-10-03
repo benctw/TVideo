@@ -2,12 +2,10 @@ from enum import Enum
 from typing import Any, Dict, List, Union
 import numpy as np
 import time
-import os
-import re
+import json
 
 from models.TVideo.TVideo import TVideo
 import config as cfg
-import json
 
 class MyEncoder(json.JSONEncoder):
     def default(self, obj):

@@ -1,3 +1,4 @@
+from typing import Any, Dict
 import cv2
 from rich.progress import track
 import numpy as np
@@ -9,28 +10,14 @@ class dotdict(dict):
     __delattr__ = dict.__delitem__
 
     @staticmethod
-    def deep(d):
+    def deep(d: Dict[Any]) -> Dict[Any]:
         d = dotdict(d)
         for key in d.keys():
             if isinstance(d[key], dict):
                 d[key] = dotdict.deep(d[key])
         return d
 
-# 物品轉字典
-def getDict(d):
-    if isinstance(d, Enum):
-        d = d.name
-    elif hasattr(d, '__dict__'):
-        d = vars(d)
-        for k, v in d.items():
-            d[k] = getDict(v)
-    elif isinstance(d, list):
-        d = [getDict(i) for i in d]
-    elif isinstance(d, tuple):
-        d = tuple(getDict(i) for i in d)
-    return d
-
-def imshow(img, title = ''):
+def imshow(img: np.ndarray, title = ''):
     cv2.imshow(title, img)
     cv2.waitKey(0)
     cv2.destroyAllWindows()

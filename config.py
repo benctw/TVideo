@@ -1,7 +1,7 @@
 from models.YoloModel.YoloModel import *
 import os
 
-__dirname = os.path.dirname(os.path.abspath(__file__))
+__dirname = os.path.dirname(os.path.abspath(__file__)).replace('\\', '/')
 
 YoloModelFolderPath = 'C:/Users/zT3Tz/Documents/TVideoYoloModel/model'
 
@@ -13,7 +13,7 @@ LPModel = YoloModel(
     inputHeight = 608
 )
 
-outputDir = __dirname + '/store/output/'
+outputDir = __dirname + '/store/output'
 
 # coco = YoloModel(
 #     namesPath   = "D:/chiziSave/yolov3coco/coco.names",

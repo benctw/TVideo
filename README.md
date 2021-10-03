@@ -1,46 +1,50 @@
 # TrafficPolice（未更新）
 
+
 ```
-TrafficPolice
-├─ README.md
+TVideo
 ├─ config.py
 ├─ controllers
-│    └─ setting.py
+│  └─ setting.py
 ├─ main.py
 ├─ models
-│    ├─ CVModel
-│    │    ├─ CVModel.py
-│    │    └─ __init__.py
-│    ├─ RESAModel
-│    │    ├─ RESAModel.py
-│    │    └─ __init__.py
-│    ├─ TVideo
-│    │    ├─ Process.py
-│    │    ├─ TFType.py
-│    │    ├─ TVideo.py
-│    │    └─ __init__.py
-│    ├─ YoloModel
-│    │    ├─ YoloModel.py
-│    │    └─ __init__.py
-│    ├─ __init__.py
-│    └─ helper.py
+│  ├─ communicate.py
+│  ├─ CVModel
+│  │  ├─ CVModel.py
+│  │  └─ __init__.py
+│  ├─ helper.py
+│  ├─ RESAModel
+│  │  ├─ RESAModel.py
+│  │  └─ __init__.py
+│  ├─ TVideo
+│  │  ├─ Process.py
+│  │  ├─ Record.py
+│  │  ├─ TVideo.py
+│  │  └─ __init__.py
+│  ├─ YoloModel
+│  │  ├─ YoloModel.py
+│  │  └─ __init__.py
+│  └─ __init__.py
+├─ openh264-1.8.0-win64.dll
+├─ README.md
 ├─ requirements.txt
 ├─ static
-│    ├─ ico
-│    ├─ img
-│    ├─ model
-│    │    ├─ lp.names
-│    │    └─ lp_yolov4.cfg
-│    └─ preset
-│           └─ defaultSetting.json
+│  ├─ ico
+│  ├─ img
+│  ├─ model
+│  │  ├─ lp.names
+│  │  └─ lp_yolov4.cfg
+│  └─ preset
+│     └─ defaultSetting.json
 ├─ store
-│    ├─ output
-│    │    └─ 1.jpg
-│    └─ settings.json
+│  ├─ output
+│  ├─ records
+│  │  └─ lastRecordId.txt
+│  └─ settings.json
 └─ views
-       └─ lang
-              ├─ standard.json
-              └─ zh-TW.json
+   └─ lang
+      ├─ standard.json
+      └─ zh-TW.json
 ```
 
 ***
@@ -49,25 +53,71 @@ TrafficPolice
 
 用於輸入為影像的模型的抽象對象
 
-#### @staticmethod getImagesFromVideo(videoCapture: cv.VideoCapture) -> [cv.Mat]
+```python
+__init__(self) -> None
+```
+
+#### @staticmethod
+
+```python
+getFrames(videoCapture: cv2.VideoCapture) -> List[np.ndarray]
+```
 
 獲取 `videoCapture` 中每一幀的影像
 
-#### @abstractmethod detectImage(self, image: cv.Mat) -> DetectResult
+```python
+getCenterPosition(points: List[List[int]]) -> List[int]
+```
+
+```python
+boxArea(box: List[int]) -> float
+```
+
+```python
+IoU(rect1: List[int], rect2: List[int]) -> float
+```
+
+```python
+crop(image: np.ndarray, box: List[int]) -> np.ndarray
+```
+
+```python
+expand(box: List[int], px: int) -> List[int]
+```
+
+```python
+offset(box: List[int], x: int, y: int) -> List[int]
+```
+
+```python
+overexPose(image: np.ndarray) -> np.ndarray
+```
+
+#### @abstractmethod
+
+```python
+detectImage(self, image: cv.Mat) -> DetectResult
+```
 
 必須重新定義該方法
 
 定義：利用模型辨識傳入之圖像並回傳 `DetectResult` 的類型
 
-#### detectVideo(self, videoCapture: cv.VideoCapture, interval: int) -> [DetectResult]
+#### Instance Method
 
-根據 `interval` 的間隔採樣辨識 `videoCapture` 中的幀
+```python
+detectVideo(self, videoCapture: cv.VideoCapture, interval: int = 1) -> List[DetectResult]
+```
+
+`interval` : 根據該值的間隔採樣辨識 `videoCapture` 中的幀
 
 ***
 
-### class DetectResult
+### class DetectResult (棄用)
 
-#### \_\_init\_\_(self, classIDs = [], boxes = [], confidences = [])
+```python
+__init__(self, image: np.ndarray, labels: List[str] = [], threshold: float = 0.2, confidence : float = 0.2, colors: List = None) -> None
+```
 
 `classIDs` : 辨識到的多個分類
 
@@ -81,21 +131,113 @@ TrafficPolice
 
 三個參數中同 `index` 的值為同一個結果
 
-#### add(self, classID: , box: list, confidence: float) -> self
+#### @staticmethod
+
+```python
+checkColor(color)
+```
+
+```python
+getAutoSelectColors(self)
+```
+
+```python
+setColors(self, colors)
+```
+
+```python
+setColor(self, index, color)
+```
+
+```python
+add(self, classID, box, confidence)
+```
 
 用於模型的辨識結果
 
-#### hasResult(self) -> bool
+```python
+@property
+count(self)
+```
+
+```python
+hasResult(self)
+```
 
 是否有至少一個結果
 
-#### crop(self, image: cv.Mat, boxIndex: int = 0) -> cv.Mat
+```python
+getNMSDetectResult(self)
+```
+
+```python
+calcNMS(self)
+```
+
+```python
+@property
+AllIndex(self)
+```
+
+```python
+crop(self, boxIndex)
+```
 
 以 `boxes` 中的第 `boxIndex` 個裁剪 `image` 圖片
 
-#### display(self) -> void
+```python
+cropAll(self, classID, indexs)
+```
+
+```python
+table(self)
+```
 
 打印出列表
+
+```python
+msg(self, classID, _, confidence, i)
+```
+
+```python
+drawBoxes(self, indexs, callbackReturnText = None)
+```
+
+```python
+draw(self, indexs, callbackCroppedImage)
+```
+
+***
+
+### class DetectResults() (棄用)
+
+```python
+__init__(self, labels = [], colors = None)
+```
+
+```python
+add(self, detectResult)
+```
+
+```python
+setColors(self, colors)
+```
+
+```python
+drawBoxes(self, indexs, callbackReturnTexts = None)
+```
+
+```python
+loop(self, indexs, callback)
+```
+
+```python
+draw(self, indexs, callbackCroppedImage)
+```
+
+```python
+table(self)
+```
 
 ***
 
@@ -103,27 +245,33 @@ TrafficPolice
 
 ### class dotdict(dict)
 
-#### @staticmethod deep(d: dict) -> dict
+讓 dict 可以用 . 取值
+
+#### @staticmethod
+
+```python
+deep(d: Dict[Any]) -> Dict[Any]
+```
 
 深度讓 `dict` 可以以 `.` 取值賦值
 
-***
+```python
+imshow(img: np.ndarray, title = '')
+```
 
-### class Timeline
+以窗口顯示一張圖片
 
-#### \_\_init\_\_(self)
-
-初始化
-
-#### stamp(self, time: int) -> self
-
-添加一次時間戳
+```python
+saveVideo(images, path, fps = 30, fourccType = 'mp4v')
+```
 
 ***
 
 ### class YoloModel(CVModel)
 
-#### \_\_init\_\_(self, namesPath: str, configPath: str, weightsPath: str, threshold: float = 0.2, confidence: float = 0.5, minConfidence: float = 0.2) -> void
+```python
+__init__(self, namesPath: str, configPath: str, weightsPath: str, confidence: float = 0.5, threshold: float = 0.2, minConfidence: float = 0.2)
+```
 
 加載模型
 
@@ -135,171 +283,373 @@ TrafficPolice
 
 預設：
 
-`threshold` : 閥值
+`confidence` : 至少要在此信心以上
 
-`confidence` : 信心
+`threshold` : 閥值, 可重疊程度
 
 `minConfidence` : 最小信心
 
 > 加載 `.names` 文件中的 `label`　和定義各 `label` 的顔色
 
-#### @staticmethod yoloFormatToTwoPoint(centerX: int, centerY: int, width: int, height: int) -> [int, int, int, int]
+#### @staticmethod
+
+```python
+yoloFormatToTwoPoint(centerX: int, centerY: int, width: int, height: int) -> List[int, int, int, int]
+```
 
 把中心點坐標和長寬轉換成左上角和右下角點的坐標
 
-`p1` : 左上角點
+返回 `[p1x, p1y, p2x, p2y]`
 
-`p2` : 右下角點
+### In
 
-返回的 `list` 對應 `[p1x, p1y, p2x, p2y]`
+```python
+detect(self, image: np.ndarray) -> Tuple[List[List[int]], List[int], List[float]]
+```
 
-#### detectImage(self, image: cv.Mat) -> DetectResult
+使用模型辨識圖像，返回 `boxes`, `classIDs`, `confidences`
+
+```python
+detectImage(self, image: cv.Mat) -> DetectResult
+```
+
+棄用
 
 使用模型辨識圖像
 
-#### drawBoxes(self, image: cv.Mat, detectResult: DetectResult) -> cv.Mat
+```python
+showConfig(self) 
+```
 
-在圖像上畫上辨識框，返回新的圖像
+未定義
 
 ***
 
-### class TrafficPolice
-整體的處理
+### class TObj(Enum)
 
-#### drivingDirection(p1: (int, int), p2: (int, int)) -> float 
+`Undefined`
 
-判斷車輛行駛方向
+`Vehicle`
 
-返回從 `p1` 到 `p2` 位置的單位向量
+`LicensePlate`
 
-#### @staticmethod getLPNumber(LPImage: cv.Mat) -> str
+`TrafficLight`
 
-從圖像中辨識車牌號碼
+`Lane`
 
-#### @staticmethod correct(image: cv.Mat) -> cv.Mat
+***
 
-矯正圖像中的矩形成正面
+### class VehicleData
 
-#### compareLPNumber(self, detectLPNumber: str) -> float
-
-比較號碼的相似度，返回大於 0 到 1 的值
-
-當返回 1 時代表號碼完全一樣
-
-### 待續 . . .
-
-
-``` python
-class TObject:
-```
-
-`image` : `np.ndarray`
-`box` : `List`
-`confidence` : `float`
-
-`label` = `'Undefined'`
+一載具的數據
 
 ```python
-class VehicleData
-```
-
-`centerPosition`
-
----
-
-```python
-class LicensePlateData
-```
-
-`cornerPoints`
-`correctImage`
-`centerPosition`
-`number`
-
-`@staticmethod`
-
-```python
-def getCornerPoints(image: np.ndarray) -> List
+__init__(self, image: np.ndarray, box: List, confidence: float, type: str)
 ```
 
 ```python
-def correct(image: np.ndarray, cornerPoints, w: int, h: int) -> np.ndarray
+calc(self)
+```
+
+***
+
+### class LicensePlateData
+
+一車牌的數據
+
+```python
+__init__(self, image: np.ndarray, box: List, confidence: float)
 ```
 
 ```python
-def getNumber(image: np.ndarray) -> str
+calc(self)
 ```
 
----
+計算數據
+
+`cornerPoints` : 車牌的四個角點
+
+`correctImage` : 矯正的圖像
+
+`centerPosition` : 車牌質心點位置
+
+`number` :  車牌號碼
+
+#### @staticmethod
 
 ```python
-class TrafficLightData
+getCornerPoints(image: np.ndarray) -> List
 ```
 
-`state`
-
-`@staticmethod`
+獲取車牌的4個角點
 
 ```python
-def getTrafficLightColor(image: np.ndarray) -> List[int]
+correct(image: np.ndarray, cornerPoints, w: int, h: int) -> np.ndarray
+```
+
+根據 `cornerPoints` 的 4 個角點矯正車牌圖片 `image`
+返回新圖片
+
+```python
+getNumber(image: np.ndarray) -> str
+```
+
+獲取辨識 `image` 得到的車牌號碼，根據台灣車牌號碼規則
+
+***
+
+### class TrafficLightState(Enum)
+
+紅綠燈狀態
+
+`unknow`
+
+`red`
+
+`yellow`
+
+`green`
+
+***
+
+### class TrafficLightData
+
+```python
+__init__(self,image: np.ndarray, box: List, confidence: float)
 ```
 
 ```python
-def ColorDectect(image: np.ndarray, red: int, yellow: int, green: int) -> TrafficLightState
+calc(self)
 ```
 
----
+計算數據
+
+`state` : 紅綠燈狀態
+
+#### @staticmethod
 
 ```python
-class TFrameData
+getTrafficLightColor(image: np.ndarray) -> Tuple[TrafficLightState, np.ndarray]
 ```
 
-```frame : np.ndarray, ```
-
-`vehicles: List[VehicleData] = []`
-
-載具數據
-
-`licensePlates: List[LicensePlateData] = []`
-
-車牌數據
-
-`trafficLights: List[TrafficLightData] = []`
-
-紅綠燈數據
-
----
+辨識 `image` 的紅綠燈狀態
 
 ```python
-class TVideo
+threePartOfTrafficLight(image: np.ndarray) -> List[np.ndarray]
 ```
 
-`frames`
-`width`
-`height`
+將 Blur 圖片分三等份
+
+```python
+cntsOfeachPart(threePartImgs: List[np.ndarray]) -> TrafficLightState
+```
+
+```python
+ColorDectect(image: np.ndarray) -> TrafficLightState
+```
+
+***
+
+### class LaneData
+
+車道線數據
+
+```python
+__init__(self, image: np.ndarray, lane: List[List[int]], confidence: float)
+```
+
+```python
+calc(self)
+```
+
+計算數據
+
+`vanishingPoint` : 消失點
+
+```python
+getVanishingPoint
+```
+
+根據車道線獲取消失點
+
+***
+
+### class TFrameData
+
+一幀的數據
+
+```python
+def __init__(self, frame: np.ndarray)
+```
+
+```python
+getTargetLicensePlatePosition(self, targetLicensePlateCodename) -> Union[List[int], None]
+```
+
+獲取目標車牌的位置
+
+***
+
+### class Direct(Enum)
+
+`left` : 向左
+
+`right` : 向右
+
+`straight` : 直行
+
+***
+
+### ProcessState(Enum)
+
+`next` : 繼續下一個 Process
+
+`nextLoop` : 繼續下一個 Schedule
+
+`stop` : 結束當前 Schedule
+
+***
+
+### class TVideo
+
+一影片的數據
+
+```python
+__init__(
+self, path: str, number: str = '', lastCodename : int = 0)
+```
+
+#### @staticmethod
+
+```python
+__getVideoDetails(path: str) -> Any:
+```
+
+獲取 `path` 的影片的詳細數據
+
+返回 `list` 中順序包含
+`frames` : 影片幀的圖像
+`width` : 影片寬度
+`height` : 影片高度
 `fps`
-`frameCount`
-`framesData`
-`lastCodename`
-`start`
-`end`
+`frameCount` : 影片幀的數目
 
 ```python
-def forEach(self, callback: ForEachFrameData)
+runProcess(self, schedule: Callable[[List[indexType], int], indexType], *processes: ForEachFrameData, maxTimes: int = None)
 ```
 
 ```python
-def runProcess(self, schedule: Callable[[int, int, int], int], process: ForEachFrameData, maxTimes: int = None)
+findCorresponding(self, frameData1: TFrameData, frameData2: TFrameData, threshold: float = 0.1)
 ```
 
-```python
-def findCorresponding(self, typeName: str, frameIndex: int, threshold: float = 0.1)
-```
+計算前幀 `frameData1` 與 後幀 `frameData2` 兩幀之間辨識結果的 `boxes` 的關係，位置與形狀接近會認為為同一物品，給予與前幀物品一樣的 `codename`，如果前幀沒有 `codename` 或沒對應物品會給予新的 `codename`。
+計算方法是計算兩幀 `box` 之間的 IoU ，IoU 值大於 `threshold` 並且為計算的所有 box 中最大的，為同一物品。
 
 ```python
-def newCodename(self) -> int
+newCodename(self) -> int
 ```
 
+使用該方法獲取新 `codename`
+
 ```python
-def save(self, path: str, fps: float = 30, fourccType: str = 'mp4v')
+getTargetLicensePlatePath(self) -> List[List[int]]
 ```
+
+獲取目標車牌在影片中的路徑，返回車牌中心點坐標組成的 `list`。
+`list` 長度同影片幀數目
+沒路徑位置的幀會儲存 `Node`
+
+```python
+getVaildTargetLicensePlatePath(self) -> List[List[int]]
+```
+(未完善)
+
+獲取多段目標車牌在影片中的路徑
+
+```python
+save(self, path: str, start: int = None, end: int = None, fps: float = None, fourccType: str = 'avc1')
+```
+
+儲存 `framesData` 中每一個 `frame` 成為影片。
+
+`path` : 儲存在該路徑，路徑包含影片名稱和後綴
+
+`start` : 從該幀數開始裁切
+
+`end` : 裁切到該幀數
+
+`fps` : 幀率，默認與原影片相同
+
+`fourccType` : 視頻數據流格式，默認 `avc1`
+
+***
+
+### class TVideoSchedule
+
+#### @staticmethod
+
+```python
+once(indexs: List[indexType], frameCount: int) -> indexType
+```
+
+處理一次。
+
+```python
+index(i: int, times: int = 1)
+```
+
+處理第 `i` 幀 `times` 次。
+
+```python
+forEach(indexs: List[indexType], frameCount: int) -> indexType
+```
+
+順序處理每一幀。
+
+```python
+forEachStep(step: int)
+```
+
+間隔 `step` 幀處理一幀。
+
+```python
+range(start: int, end: int, step)
+```
+
+處理從 `start` 到 `end` 每一幀。
+
+```python
+forEachStepAll(step: int)
+```
+
+間隔 `step` 幀處理一幀，處理到最後，回到開頭從第 2 幀間隔 `step` 幀處理一幀，以此類推，直到影片全部幀都處理過。
+
+```python
+random(indexs: List[indexType], frameCount: int) -> indexType
+```
+
+打亂處理的順序，處理全部幀，不會重複處理。
+
+```python
+randomIndex(indexs: List[indexType], frameCount: int) -> indexType
+```
+
+隨機挑選一幀處理。
+
+```python
+forward(start: int, length: int = None, step: int = 1)
+```
+
+從 `start` 開始順序間隔 `step` 處理，處理到 `length` 幀後。
+`length` 包含跳過的幀數，`length` 默認到影片結束。
+
+```python
+backward(start: int, length: int = None, step: int = -1)
+```
+
+從 `start` 開始順序間隔 `step` 處理，處理到 `length` 幀後。
+`length` 包含跳過的幀數，`length` 默認到影片開始。
+
+***
+
+### 待續 ...

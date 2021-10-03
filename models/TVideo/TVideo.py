@@ -21,7 +21,7 @@ class TObj(Enum):
 	Lane         = 'Lane'
 
 
-from abc import ABC, abstractmethod
+from abc import ABC
 class TObject(ABC):
 	def __init__(
 		self,
@@ -34,7 +34,6 @@ class TObject(ABC):
 		self.confidence  = confidence
 		self.label: TObj = TObj.Undefined
 
-# 一載具的數據
 class VehicleData:
 	def __init__(
 		self, 
@@ -62,7 +61,6 @@ class VehicleData:
 		#!
 
 
-# 一車牌的數據
 class LicensePlateData:
 
 	# 車牌的長寬比
@@ -173,7 +171,6 @@ class LicensePlateData:
 		return re.sub(r'[^\dA-Z]+', '', easyocrResult[minIndex][1].upper())
 
 
-# 紅綠燈狀態
 class TrafficLightState(Enum):
 	unknow = 'unknow'
 	red    = 'red'
@@ -275,13 +272,12 @@ class TrafficLightData:
 		else                                     : return TrafficLightState.unknow
 
 
-# 車道線數據
 class LaneData:
 	def __init__(
 		self,
 		image      : np.ndarray,
 		lane       : List[List[int]],
-		confidence : float,
+		confidence : float
 	):
 		self.image       = image,
 		self.lane        = lane
@@ -295,11 +291,10 @@ class LaneData:
 		...
 
 
-# 一幀的數據
 class TFrameData:
 	def __init__(
 		self, 
-		frame: np.ndarray, 
+		frame: np.ndarray
 	):
 		self.frame = frame
 		self.vehicles                 : List[VehicleData]      = []
@@ -317,9 +312,9 @@ class TFrameData:
 		return None
 	
 class Direct(Enum):
-    right    = auto()
-    left     = auto()
-    straight = auto()
+	left     = auto()
+	right    = auto()
+	straight = auto()
 
 class ProcessState(Enum):
 	next     = auto()
@@ -329,7 +324,7 @@ class ProcessState(Enum):
 ForEachFrameData = Callable[[TFrameData, int, Any], ProcessState]
 indexType = Union[int, List[int]]
 
-# 一影片的數據
+
 class TVideo:
 	def __init__(
 		self, 
@@ -337,14 +332,17 @@ class TVideo:
 		number       : str = '',
 		lastCodename : int = 0
 	):
-		self.path = path
-		self.fileName = os.path.split(path)[1]
-		self.number = number
-		self.saveFilePath = ''
+		self.path          = path
+		self.folderPath    = os.path.split(path)[0]
+		self.file          = os.path.split(path)[1]
+		self.fileName      = '.'.join(self.file.split('.')[:-1])
+		self.fileExtension = self.file.split('.')[-1]
+		self.saveFilePath  = ''
+		self.number        = number
 
 		videoDetails = self.__getVideoDetails(path)
-		self.width      : int = videoDetails[1]
-		self.height     : int = videoDetails[2]
+		self.width      : int   = videoDetails[1]
+		self.height     : int   = videoDetails[2]
 		self.fps        : float = videoDetails[3]
 		self.frameCount : int   = videoDetails[4]
 
@@ -383,10 +381,6 @@ class TVideo:
 		fps    : float = videoCapture.get(cv2.CAP_PROP_FPS)
 		videoCapture.release()
 		return [frames, width, height, fps, frameCount]
-
-	def forEach(self, callback: ForEachFrameData):
-		for i in range(0, self.frameCount):
-			callback(self.framesData[i], i, self)
 
 	def runProcess(self, schedule: Callable[[List[indexType], int], indexType], *processes: ForEachFrameData, maxTimes: int = None):
 		'''
@@ -431,10 +425,6 @@ class TVideo:
 						elif state == ProcessState.nextLoop : break
 						elif state == ProcessState.stop     : return self
 		return self
-
-	#!
-	def calc(self):
-		...
 
 	def findCorresponding(self, frameData1: TFrameData, frameData2: TFrameData, threshold: float = 0.1):
 		# 跟前一幀比
@@ -502,8 +492,14 @@ class TVideo:
 		# if hasattr(objs[i], 'possiblePositionAtTheNextMoment'):
 		return []
 
-	#! end = -1?
-	def save(self, path: str, start: int = None, end: int = None, fps: float = None, fourccType: str = 'avc1'):
+	def save(
+		self, 
+		path       : str, 
+		start      : int   = None, 
+		end        : int   = None, 
+		fps        : float = None, 
+		fourccType : str   = 'avc1'
+	):
 		self.saveFilePath = path
 		if fps is None: fps = self.fps
 		fourcc = cv2.VideoWriter_fourcc(*fourccType)
@@ -525,8 +521,9 @@ class TVideoSchedule:
 		return -1 if len(indexs) > 0 else resultIndex
 	
 	@staticmethod
-	def sample(indexs: List[indexType], frameCount: int) -> int:
-		...
+	def once(indexs: List[indexType], frameCount: int) -> indexType:
+		if len(indexs) > 0: return -1
+		return 0
 
 	@staticmethod
 	def index(i: int, times: int = 1):
