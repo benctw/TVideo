@@ -18,7 +18,7 @@ def getColors(lastCodename):
 
 class Process:
 
-    def __init__(self, process) -> None:
+    def __init__(self, process):
         state = process()
         return ProcessState.next if state is None else state
 

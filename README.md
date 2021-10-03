@@ -1,5 +1,4 @@
-# TrafficPolice（未更新）
-
+# TVideo（未更新）
 
 ```
 TVideo
@@ -113,134 +112,6 @@ detectVideo(self, videoCapture: cv.VideoCapture, interval: int = 1) -> List[Dete
 
 ***
 
-### class DetectResult (棄用)
-
-```python
-__init__(self, image: np.ndarray, labels: List[str] = [], threshold: float = 0.2, confidence : float = 0.2, colors: List = None) -> None
-```
-
-`classIDs` : 辨識到的多個分類
-
-`boxes` : 多個分類的邊框位置
-
-`confidences` : 多個分類的可信程度
-
-`boxes` 中每個位置應該儲存的的資料：
-
-該分類在圖上的 `[p1x, p1y, p2x, p2y]` ，分別為左上角 `p1x, p1y` 和右下角　`p2x, p2y` 點的位置
-
-三個參數中同 `index` 的值為同一個結果
-
-#### @staticmethod
-
-```python
-checkColor(color)
-```
-
-```python
-getAutoSelectColors(self)
-```
-
-```python
-setColors(self, colors)
-```
-
-```python
-setColor(self, index, color)
-```
-
-```python
-add(self, classID, box, confidence)
-```
-
-用於模型的辨識結果
-
-```python
-@property
-count(self)
-```
-
-```python
-hasResult(self)
-```
-
-是否有至少一個結果
-
-```python
-getNMSDetectResult(self)
-```
-
-```python
-calcNMS(self)
-```
-
-```python
-@property
-AllIndex(self)
-```
-
-```python
-crop(self, boxIndex)
-```
-
-以 `boxes` 中的第 `boxIndex` 個裁剪 `image` 圖片
-
-```python
-cropAll(self, classID, indexs)
-```
-
-```python
-table(self)
-```
-
-打印出列表
-
-```python
-msg(self, classID, _, confidence, i)
-```
-
-```python
-drawBoxes(self, indexs, callbackReturnText = None)
-```
-
-```python
-draw(self, indexs, callbackCroppedImage)
-```
-
-***
-
-### class DetectResults() (棄用)
-
-```python
-__init__(self, labels = [], colors = None)
-```
-
-```python
-add(self, detectResult)
-```
-
-```python
-setColors(self, colors)
-```
-
-```python
-drawBoxes(self, indexs, callbackReturnTexts = None)
-```
-
-```python
-loop(self, indexs, callback)
-```
-
-```python
-draw(self, indexs, callbackCroppedImage)
-```
-
-```python
-table(self)
-```
-
-***
-
 ### helper
 
 ### class dotdict(dict)
@@ -301,7 +172,7 @@ yoloFormatToTwoPoint(centerX: int, centerY: int, width: int, height: int) -> Lis
 
 返回 `[p1x, p1y, p2x, p2y]`
 
-### In
+### Instance Method
 
 ```python
 detect(self, image: np.ndarray) -> Tuple[List[List[int]], List[int], List[float]]
@@ -649,6 +520,206 @@ backward(start: int, length: int = None, step: int = -1)
 
 從 `start` 開始順序間隔 `step` 處理，處理到 `length` 幀後。
 `length` 包含跳過的幀數，`length` 默認到影片開始。
+
+***
+
+### class Process
+
+```python
+__init__(self, process)
+```
+
+#### @staticmethod
+
+```python
+showIndex(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState
+```
+
+```python
+yolo(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState
+```
+
+```python
+calcLicensePlateData(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState
+```
+
+```python
+calcCenterPosition(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState
+```
+
+```python
+findCorresponding(reverse: bool = False)
+```
+
+```python
+hasCorrespondingTargetLicensePlate(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState
+```
+
+```python
+drawBoxes(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState
+```
+
+```python
+drawPath(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState
+```
+
+```python
+findTargetNumber(number: str = None)
+```
+
+```python
+correspondingTrafficLights(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState
+```
+
+```python
+drawCurrentTrafficLightState(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState
+```
+
+```python
+cocoDetect(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState
+```
+
+```python
+updateRangeOfTargetLicensePlate(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState
+```
+
+```python
+calcPathDirection(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState
+```
+
+```python
+intersectionOfLPAndTL(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState
+```
+
+***
+
+***
+
+### class DetectResult (棄用)
+
+```python
+__init__(self, image: np.ndarray, labels: List[str] = [], threshold: float = 0.2, confidence : float = 0.2, colors: List = None) -> None
+```
+
+`classIDs` : 辨識到的多個分類
+
+`boxes` : 多個分類的邊框位置
+
+`confidences` : 多個分類的可信程度
+
+`boxes` 中每個位置應該儲存的的資料：
+
+該分類在圖上的 `[p1x, p1y, p2x, p2y]` ，分別為左上角 `p1x, p1y` 和右下角　`p2x, p2y` 點的位置
+
+三個參數中同 `index` 的值為同一個結果
+
+#### @staticmethod
+
+```python
+checkColor(color)
+```
+
+```python
+getAutoSelectColors(self)
+```
+
+```python
+setColors(self, colors)
+```
+
+```python
+setColor(self, index, color)
+```
+
+```python
+add(self, classID, box, confidence)
+```
+
+用於模型的辨識結果
+
+```python
+@property
+count(self)
+```
+
+```python
+hasResult(self)
+```
+
+是否有至少一個結果
+
+```python
+getNMSDetectResult(self)
+```
+
+```python
+calcNMS(self)
+```
+
+```python
+@property
+AllIndex(self)
+```
+
+```python
+crop(self, boxIndex)
+```
+
+以 `boxes` 中的第 `boxIndex` 個裁剪 `image` 圖片
+
+```python
+cropAll(self, classID, indexs)
+```
+
+```python
+table(self)
+```
+
+打印出列表
+
+```python
+msg(self, classID, _, confidence, i)
+```
+
+```python
+drawBoxes(self, indexs, callbackReturnText = None)
+```
+
+```python
+draw(self, indexs, callbackCroppedImage)
+```
+
+***
+
+### class DetectResults() (棄用)
+
+```python
+__init__(self, labels = [], colors = None)
+```
+
+```python
+add(self, detectResult)
+```
+
+```python
+setColors(self, colors)
+```
+
+```python
+drawBoxes(self, indexs, callbackReturnTexts = None)
+```
+
+```python
+loop(self, indexs, callback)
+```
+
+```python
+draw(self, indexs, callbackCroppedImage)
+```
+
+```python
+table(self)
+```
 
 ***
 
