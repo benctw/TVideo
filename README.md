@@ -141,7 +141,15 @@ saveVideo(images, path, fps = 30, fourccType = 'mp4v')
 ### class YoloModel(CVModel)
 
 ```python
-__init__(self, namesPath: str, configPath: str, weightsPath: str, confidence: float = 0.5, threshold: float = 0.2, minConfidence: float = 0.2)
+__init__(
+       self, 
+       namesPath     : str, 
+       configPath    : str, 
+       weightsPath   : str, 
+       confidence    : float = 0.5, 
+       threshold     : float = 0.2, 
+       minConfidence : float = 0.2
+)
 ```
 
 加載模型
@@ -598,7 +606,14 @@ intersectionOfLPAndTL(frameData: TFrameData, frameIndex: int, tvideo: TVideo) ->
 ### class DetectResult (棄用)
 
 ```python
-__init__(self, image: np.ndarray, labels: List[str] = [], threshold: float = 0.2, confidence : float = 0.2, colors: List = None) -> None
+__init__(
+       self, 
+       image      : np.ndarray, 
+       labels     : List[str] = [], 
+       threshold  : float     = 0.2, 
+       confidence : float     = 0.2, 
+       colors     : List      = None
+)
 ```
 
 `classIDs` : 辨識到的多個分類
