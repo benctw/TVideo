@@ -192,9 +192,7 @@ detect(self, image: np.ndarray) -> Tuple[List[List[int]], List[int], List[float]
 detectImage(self, image: cv.Mat) -> DetectResult
 ```
 
-棄用
-
-使用模型辨識圖像
+使用模型辨識圖像（棄用）
 
 ```python
 showConfig(self) 

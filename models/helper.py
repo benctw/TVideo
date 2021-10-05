@@ -1,4 +1,3 @@
-from typing import Any, Dict
 import cv2
 from rich.progress import track
 import numpy as np
@@ -10,7 +9,7 @@ class dotdict(dict):
     __delattr__ = dict.__delitem__
 
     @staticmethod
-    def deep(d: Dict[Any]) -> Dict[Any]:
+    def deep(d):
         d = dotdict(d)
         for key in d.keys():
             if isinstance(d[key], dict):
