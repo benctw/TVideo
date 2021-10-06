@@ -72,6 +72,8 @@ getFrames(videoCapture: cv2.VideoCapture) -> List[np.ndarray]
 getCenterPosition(points: List[List[int]]) -> List[int]
 ```
 
+獲取中心點位置。
+
 ```python
 boxArea(box: List[int]) -> float
 ```
