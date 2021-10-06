@@ -144,7 +144,7 @@ deep(d: Dict[Any]) -> Dict[Any]
 imshow(img: np.ndarray, title = '')
 ```
 
-以窗口顯示一張圖片。
+以窗口顯示 `img` 圖像。
 
 ```python
 saveVideo(images, path, fps = 30, fourccType = 'mp4v')
@@ -442,7 +442,7 @@ findCorresponding(self, frameData1: TFrameData, frameData2: TFrameData, threshol
 newCodename(self) -> int
 ```
 
-使用該方法獲取新 `codename`
+使用該方法獲取新 `codename`。
 
 ```python
 getTargetLicensePlatePath(self) -> List[List[int]]
@@ -457,7 +457,7 @@ getVaildTargetLicensePlatePath(self) -> List[List[int]]
 ```
 (未完善)
 
-獲取多段目標車牌在影片中的路徑
+獲取多段目標車牌在影片中的路徑。
 
 ```python
 save(self, path: str, start: int = None, end: int = None, fps: float = None, fourccType: str = 'avc1')
@@ -575,25 +575,39 @@ calcLicensePlateData(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> 
 calcCenterPosition(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState
 ```
 
+計算車牌的中心點位置。
+
 ```python
 findCorresponding(reverse: bool = False)
 ```
+
+計算當前幀與前一幀的物件的關係，如果位置與形狀接近，會標記相同的 `codename` 屬性。
+
+`reverse` : 是否兩幀相反比較，用於在向前推敲關係的時候。
 
 ```python
 hasCorrespondingTargetLicensePlate(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState
 ```
 
+是否有對應的車牌號碼。
+
 ```python
 drawBoxes(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState
 ```
+
+繪畫模型辨識到物品的矩形。
 
 ```python
 drawPath(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState
 ```
 
+繪畫物品的路徑。
+
 ```python
 findTargetNumber(number: str = None)
 ```
+
+尋找物品中是否有對應的車牌號碼 `number`。
 
 ```python
 correspondingTrafficLights(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState
@@ -603,17 +617,25 @@ correspondingTrafficLights(frameData: TFrameData, frameIndex: int, tvideo: TVide
 drawCurrentTrafficLightState(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState
 ```
 
+繪畫對應拍攝者所在車道的紅綠燈狀態在輸出圖像中。
+
 ```python
 cocoDetect(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState
 ```
+
+使用 coco 模型對幀辨識。
 
 ```python
 updateRangeOfTargetLicensePlate(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState
 ```
 
+更新對應車牌號碼所在的範圍。
+
 ```python
 calcPathDirection(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState
 ```
+
+計算車輛的去向，左轉、直行或右轉。
 
 ```python
 intersectionOfLPAndTL(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState
