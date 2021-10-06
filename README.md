@@ -46,6 +46,10 @@ TVideo
       └─ zh-TW.json
 ```
 
+## structure
+
+![](https://raw.githubusercontent.com/Chizi-P/TVideo/main/structure.png?token=AOVJGIZMGAVNSVQ7JE2DQA3BLW4ZM)
+
 ***
 
 ### class CVModel
