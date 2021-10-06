@@ -48,7 +48,7 @@ TVideo
 
 ## structure
 
-![](https://raw.githubusercontent.com/Chizi-P/TVideo/main/structure.png?token=AOVJGIZMGAVNSVQ7JE2DQA3BLW4ZM)
+![](structure.png)
 
 ***
 
