@@ -1,4 +1,4 @@
-# TVideo（未完成）
+# TVideo
 
 ```
 TVideo
@@ -76,21 +76,31 @@ getCenterPosition(points: List[List[int]]) -> List[int]
 boxArea(box: List[int]) -> float
 ```
 
+計算 `box` 的面積。
+
 ```python
 IoU(rect1: List[int], rect2: List[int]) -> float
 ```
+
+計算 `rect1` 與 `rect2` 的 IoU。
 
 ```python
 crop(image: np.ndarray, box: List[int]) -> np.ndarray
 ```
 
+根據 `box` 的位置裁剪 `image`，返回新的圖像。
+
 ```python
 expand(box: List[int], px: int) -> List[int]
 ```
 
+擴大 `box` 的長寬 `px` 像素。
+
 ```python
 offset(box: List[int], x: int, y: int) -> List[int]
 ```
+
+偏移 `box` 的整體位置。
 
 ```python
 overexPose(image: np.ndarray) -> np.ndarray
@@ -102,7 +112,7 @@ overexPose(image: np.ndarray) -> np.ndarray
 detectImage(self, image: cv.Mat) -> DetectResult
 ```
 
-必須重新定義該方法
+必須重新定義該方法。
 
 定義：利用模型辨識傳入之圖像並回傳 `DetectResult` 的類型
 
@@ -112,7 +122,7 @@ detectImage(self, image: cv.Mat) -> DetectResult
 detectVideo(self, videoCapture: cv.VideoCapture, interval: int = 1) -> List[DetectResult]
 ```
 
-`interval` : 根據該值的間隔採樣辨識 `videoCapture` 中的幀
+`interval` : 根據該值的間隔採樣辨識 `videoCapture` 中的幀。
 
 ***
 
@@ -120,7 +130,7 @@ detectVideo(self, videoCapture: cv.VideoCapture, interval: int = 1) -> List[Dete
 
 ### class dotdict(dict)
 
-讓 dict 可以用 . 取值
+讓 dict 可以用 . 取值。
 
 #### @staticmethod
 
@@ -128,17 +138,19 @@ detectVideo(self, videoCapture: cv.VideoCapture, interval: int = 1) -> List[Dete
 deep(d: Dict[Any]) -> Dict[Any]
 ```
 
-深度讓 `dict` 可以以 `.` 取值賦值
+深度讓 `dict` 可以以 `.` 取值賦值。
 
 ```python
 imshow(img: np.ndarray, title = '')
 ```
 
-以窗口顯示一張圖片
+以窗口顯示一張圖片。
 
 ```python
 saveVideo(images, path, fps = 30, fourccType = 'mp4v')
 ```
+
+存儲 `images` 圖像列表到 `path` 路徑上。
 
 ***
 
@@ -180,7 +192,7 @@ __init__(
 yoloFormatToTwoPoint(centerX: int, centerY: int, width: int, height: int) -> List[int, int, int, int]
 ```
 
-把中心點坐標和長寬轉換成左上角和右下角點的坐標
+把中心點坐標和長寬轉換成左上角和右下角點的坐標。
 
 返回 `[p1x, p1y, p2x, p2y]`
 
@@ -313,7 +325,7 @@ calc(self)
 getTrafficLightColor(image: np.ndarray) -> Tuple[TrafficLightState, np.ndarray]
 ```
 
-辨識 `image` 的紅綠燈狀態
+辨識 `image` 的紅綠燈狀態。
 
 ```python
 threePartOfTrafficLight(image: np.ndarray) -> List[np.ndarray]
@@ -545,13 +557,19 @@ __init__(self, process)
 showIndex(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState
 ```
 
+打印出當前處理中的幀數。
+
 ```python
 yolo(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState
 ```
 
+使用載入之 yolo 模型辨識。
+
 ```python
 calcLicensePlateData(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState
 ```
+
+計算車牌的額外數據。
 
 ```python
 calcCenterPosition(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState
