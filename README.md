@@ -52,6 +52,47 @@ TVideo
 
 ***
 
+## How to use
+
+檢測違規行為
+
+```
+$ python main.py findNumber [VIDEO-PATH] [NUMBER]
+```
+
+輸入對應的
+
+`[VIDEO-PATH]`： 影片路徑
+
+`[NUMBER]`： 車牌號碼
+
+***
+
+# Developer's documentation
+
+## Table of Contents
+
+* [CVModel](https://github.com/Chizi-P/TVideo#class-cvmodel)
+* [helper](https://github.com/Chizi-P/TVideo#helper)
+* [YoloModel](https://github.com/Chizi-P/TVideo#class-yolomodelcvmodel)
+* [TObj](https://github.com/Chizi-P/TVideo#class-tobjenum)
+* [VehicleData](https://github.com/Chizi-P/TVideo#class-vehicledata)
+* [LicensePlateData](https://github.com/Chizi-P/TVideo#class-licenseplatedata)
+* [TrafficLightState](https://github.com/Chizi-P/TVideo#class-trafficlightstateenum)
+* [TrafficLightData](https://github.com/Chizi-P/TVideo#class-trafficlightdata)
+* [LaneData](https://github.com/Chizi-P/TVideo#class-lanedata)
+* [TFrameData](https://github.com/Chizi-P/TVideo#class-tframedata)
+* [Direct](https://github.com/Chizi-P/TVideo#class-directenum)
+* [ProcessState](https://github.com/Chizi-P/TVideo#processstateenum)
+* [TVideo](https://github.com/Chizi-P/TVideo#class-tvideo)
+* [TVideoSchedule](https://github.com/Chizi-P/TVideo#class-tvideoschedule)
+* [Process](https://github.com/Chizi-P/TVideo#class-process)
+* Deprecated
+   * [DetectResult](https://github.com/Chizi-P/TVideo#class-detectresult-%E6%A3%84%E7%94%A8)
+   * [DetectResults](https://github.com/Chizi-P/TVideo#class-detectresults-%E6%A3%84%E7%94%A8)
+
+***
+
 ### class CVModel
 
 用於輸入為影像的模型的抽象對象
@@ -395,7 +436,7 @@ getTargetLicensePlatePosition(self, targetLicensePlateCodename) -> Union[List[in
 
 ***
 
-### ProcessState(Enum)
+### class ProcessState(Enum)
 
 `next` : 繼續下一個 Process
 
@@ -647,7 +688,7 @@ intersectionOfLPAndTL(frameData: TFrameData, frameIndex: int, tvideo: TVideo) ->
 
 ***
 
-### class DetectResult (棄用)
+### class DetectResult() (棄用)
 
 ```python
 __init__(
