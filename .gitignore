@@ -1,3 +1,6 @@
 __pycache__/
 *.pyc
 *.pyo
+static/model/lp_yolov4_final.weights
+store/output/
+store/records/

@@ -3,7 +3,7 @@ import os
 
 __dirname = os.path.dirname(os.path.abspath(__file__)).replace('\\', '/')
 
-YoloModelFolderPath = 'C:/Users/zT3Tz/Documents/TVideoYoloModel/model'
+YoloModelFolderPath = __dirname + '/static/model'
 
 LPModel = YoloModel(
     namesPath   = YoloModelFolderPath + '/lp.names',
