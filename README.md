@@ -52,23 +52,35 @@ TVideo
 
 ***
 
-## How to use
+## Command
 
-檢測違規行為
+#### 檢測違規行為
 
 ```
-$ python main.py findNumber [VIDEO-PATH] [NUMBER]
+$ python main.py detect VIDEOPATH NUMBER VIOLATIONTYPE
 ```
 
-輸入對應的
+#### 尋找車牌號碼
 
-`[VIDEO-PATH]`： 影片路徑
+```
+$ python main.py findNumber VIDEOPATH NUMBER 
+```
 
-`[NUMBER]`： 車牌號碼
+`VIDEOPATH`： 影片路徑
+
+`NUMBER`： 車牌號碼
+
+`VIOLATIONTYPE`： 違規行為種類
 
 ***
 
-# Developer's documentation
+## 簡單可分離使用
+
+YoloModel()
+
+***
+
+# Developer's Documentation
 
 ## Table of Contents
 
