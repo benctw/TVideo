@@ -61,6 +61,7 @@ class Record:
     
     def load(self, id: int) -> TVideo:
         tvideo = TVideo()
+        print('未完成 load 功能')
         try:
             with open(f'{self.savePath}/Record_{id}.json') as f:
                 ...

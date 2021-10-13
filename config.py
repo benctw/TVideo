@@ -24,3 +24,4 @@ outputDir = __dirname + '/store/output'
 # )
 
 saveRecordPath = __dirname + '/store/records'
+outputNameFormat = 'result-video_Record_'

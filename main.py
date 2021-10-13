@@ -1,5 +1,4 @@
 import math
-import time
 import os
 import sys
 import argparse
@@ -118,8 +117,8 @@ def findNumber(args):
 		Process.intersectionOfLPAndTL
 	)
 	record = Record()
-	print('dddd:', f'{cfg.outputDir}/result-video_Record_{record.getLastRecordId()}_{tVideo.fileName}.mp4')
-	tVideo.save(f'{cfg.outputDir}/result-video_Record_{record.getLastRecordId() + 1}_{tVideo.fileName}.mp4')
+	print('dddd:', f'{cfg.outputDir}/{cfg.outputNameFormat}{record.getLastRecordId()}_{tVideo.fileName}.mp4')
+	tVideo.save(f'{cfg.outputDir}/{cfg.outputNameFormat}{record.getLastRecordId() + 1}_{tVideo.fileName}.mp4')
 	record.save(tVideo)
 	INFO.progress(1)
 	os._exit(0)

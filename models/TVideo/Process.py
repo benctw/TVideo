@@ -6,6 +6,7 @@ from config import *
 from ..communicate import *
 import numpy as np
 import cv2
+import config as cfg
 
 #!
 colors = None
@@ -131,6 +132,8 @@ class Process:
                     INFO(f'found')
                     INFO(f'在 {frameIndex} 幀, {frameIndex / tvideo.fps} 秒')
                     tvideo.targetLicensePlateCodename = lp.codename
+                    # 輸出車牌
+                    cv2.imwrite(f'{cfg.outputDir}/{targetNumber}.jpg', lp.correctImage)
                     return ProcessState.stop
             return ProcessState.next
         return __findNumber

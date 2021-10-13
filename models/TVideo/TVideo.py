@@ -338,6 +338,7 @@ class TVideo:
 		self.fileName      = '.'.join(self.file.split('.')[:-1])
 		self.fileExtension = self.file.split('.')[-1]
 		self.saveFilePath  = ''
+		self.saveFile      = ''
 		self.number        = number
 
 		videoDetails = self.__getVideoDetails(path)
@@ -501,6 +502,7 @@ class TVideo:
 		fourccType : str   = 'avc1'
 	):
 		self.saveFilePath = path
+		self.saveFile = os.path.split(path)[1]
 		if fps is None: fps = self.fps
 		fourcc = cv2.VideoWriter_fourcc(*fourccType)
 		out = cv2.VideoWriter(path, fourcc, fps, (int(self.width), int(self.height)))
