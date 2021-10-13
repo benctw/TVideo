@@ -499,7 +499,11 @@ getTargetLicensePlatePosition(self, targetLicensePlateCodename) -> Union[List[in
 
 ```python
 __init__(
-self, path: str, number: str = '', lastCodename : int = 0)
+   self, 
+   path: str, 
+   number: str = '', 
+   lastCodename : int = 0
+)
 ```
 
 #### @staticmethod
