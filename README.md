@@ -74,9 +74,24 @@ $ python main.py findNumber VIDEOPATH NUMBER
 
 ***
 
-## 簡單可分離使用
+## some utils
 
-YoloModel()
+加載 coco 模型辨識圖片
+
+```python
+coco = YoloModel(
+      namesPath   = 'coco.names',
+      configPath  = 'yolov3.cfg',
+      weightsPath = 'yolov3.weights',
+      inputWidth  = '416',
+      inputHeight = '416'
+)
+img = cv2.imread('image path')
+boxes, _, _ = coco.detect(img)
+cv2.rectangle(img, (boxes[0][:2]), (boxes[0][2:]), (0, 0, 255), 2)
+cv2.imshow(img)
+cv2.waitKey(0)
+```
 
 ***
 
