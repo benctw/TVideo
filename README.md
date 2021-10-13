@@ -76,7 +76,7 @@ $ python main.py findNumber VIDEOPATH NUMBER
 
 ## some utils
 
-加載 coco 模型辨識圖片
+#### 加載 coco 模型
 
 ```python
 coco = YoloModel(
@@ -86,10 +86,30 @@ coco = YoloModel(
       inputWidth  = '416',
       inputHeight = '416'
 )
+```
+
+#### 辨識圖片
+
+```python
 img = cv2.imread('image path')
+
 boxes, _, _ = coco.detect(img)
 cv2.rectangle(img, (boxes[0][:2]), (boxes[0][2:]), (0, 0, 255), 2)
+
 cv2.imshow(img)
+cv2.waitKey(0)
+```
+
+#### 辨識圖片（棄用的方法，還是可以嘗試一下下）
+
+```python
+img = cv2.imread('image path')
+
+detectResult = coco.detectImage(img)
+detectResult.calcNMS()
+resImg = detectResult.drawBoxes(detectResult.NMSIndexs, detectResult.msg)
+
+cv2.imshow(resImg)
 cv2.waitKey(0)
 ```
 
@@ -275,7 +295,7 @@ detect(self, image: np.ndarray) -> Tuple[List[List[int]], List[int], List[float]
 使用模型辨識圖像，返回 `boxes`, `classIDs`, `confidences`
 
 ```python
-detectImage(self, image: cv.Mat) -> DetectResult
+detectImage(self, image: np.ndarray) -> DetectResult
 ```
 
 使用模型辨識圖像（棄用）
