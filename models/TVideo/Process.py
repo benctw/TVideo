@@ -74,8 +74,10 @@ class Process:
     
     @staticmethod
     def hasCorrespondingTargetLicensePlate(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
-        for lp in frameData.licensePlates:
+        for i, lp in enumerate(frameData.licensePlates):
             if lp.codename == tvideo.targetLicensePlateCodename:
+                frameData.hasTargetLicensePlate = True
+                frameData.targetLicensePlateIndex = i
                 return ProcessState.next
         return ProcessState.stop
 
@@ -258,7 +260,24 @@ class Process:
 
     @staticmethod
     def calcPathDirection(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
-        
+
+        def calcLaneCrossLP(fd: TFrameData) -> Direct:
+            centerPosition = fd.licensePlates[fd.targetLicensePlateIndex].centerPosition
+            # cnts, _ = cv2.findContours(frameData.lanes ,cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            # cntsArea = [cv2.contourArea(c) for c in cnts]
+            # maxIndex = np.argmax(cntsArea)
+            # maxCnt = cnts[maxIndex]
+            fd.lanes = cfg.laneModel.detect(fd.frame)
+            row = fd.lanes[ :, centerPosition[1]]
+            if np.all(row == 0): return Direct.unknow
+            start = row.index(255)
+            reverseRow = row.copy()
+            reverseRow.reverse()
+            end = len(row) - reverseRow.index(255)
+            if   centerPosition < start : return Direct.left
+            elif centerPosition > end   : return Direct.right
+            else                        : return Direct.straight
+
         def GetClockAngle(v1, v2):
             # 2個向量的乘積
             theNorm = np.linalg.norm(v1) * np.linalg.norm(v2)
@@ -268,18 +287,27 @@ class Process:
             theta   = np.rad2deg(np.arccos(np.dot(v1, v2) / theNorm))
             if rho < 0 : return -theta
             else       : return theta
-        
+
         pathList = tvideo.getVaildTargetLicensePlatePath()
         print('pathList', pathList)
         directs = []
+
         for path in pathList:
             if len(path) == 0: continue
-            v1 = [path[ 1][0] - path[ 0][0], path[ 1][1] - path[ 0][1]]
-            v2 = [path[-1][0] - path[-2][0], path[-1][1] - path[-2][1]]
+            v1 = [path[ 5][0] - path[ 0][0], path[ 5][1] - path[ 0][1]]
+            v2 = [path[-1][0] - path[-6][0], path[-1][1] - path[-6][1]]
             theta = GetClockAngle(v1, v2)
-            if   theta > 15  : directs.append(Direct.right)
-            elif theta < -15 : directs.append(Direct.left)
-            else             : directs.append(Direct.straight)
+            if   theta >  30 : directs.append(Direct.right)
+            elif theta < -30 : directs.append(Direct.left)
+            else             : 
+                tlp = tvideo.framesData[tvideo.trafficLightStateIsRedFrameIndexs[-1]].licensePlates[tvideo.trafficLightStateIsRedFrameIndexs]
+                tlp.cornerPoints = tlp.getCornerPoints(tlp.image)
+                tlp.centerPosition = CVModel.getCenterPosition(tlp.cornerPoints)
+
+                laneCrossLPDirect = calcLaneCrossLP(tvideo.framesData[tvideo.trafficLightStateIsRedFrameIndexs[-1]])
+                if laneCrossLPDirect is Direct.unknow : directs.append(Direct.straight)
+                else                                  : directs.append(laneCrossLPDirect)
+
         tvideo.directs = directs
         return ProcessState.stop
 
@@ -296,3 +324,35 @@ class Process:
         print(tvideo.trafficLightStateIsRedFrameIndexs)
         print(trafficLightStateIsRedFrameIndexs[0], '~', trafficLightStateIsRedFrameIndexs[-1])
         return ProcessState.stop
+
+    @staticmethod
+    def createLaneData(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
+        frameData.lanes = LaneData(cfg.laneModel.detect(frameData.frame))
+        return ProcessState.next
+
+    # @staticmethod
+    # def calcLaneCrossLP(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
+    #     result = Direct.unknow
+    #     centerPosition = frameData.licensePlates[frameData.targetLicensePlateIndex].centerPosition
+    #     # cnts, _ = cv2.findContours(frameData.lanes ,cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    #     # cntsArea = [cv2.contourArea(c) for c in cnts]
+    #     # maxIndex = np.argmax(cntsArea)
+    #     # maxCnt = cnts[maxIndex]
+    #     row = frameData.lanes[ :, centerPosition[1]]
+    #     if np.all(row == 0): return ProcessState.next
+    #     start = row.index(255)
+    #     reverseRow = row.copy()
+    #     reverseRow.reverse()
+    #     end = len(row) - reverseRow.index(255)
+    #     if   centerPosition < start : result = Direct.left
+    #     elif centerPosition > end   : result = Direct.right
+    #     else                        : result = Direct.straight
+    #     frameData.LaneCrossLP = result
+    #     return ProcessState.next
+
+    @staticmethod
+    def drawLane(frameData: TFrameData, frameIndex: int, tvideo: TVideo) -> ProcessState:
+        if frameData.lanes is None: return ProcessState.next
+        frameData.lanes.image = frameData.lanes.image.astype(frameData.frame.dtype)
+        frameData.frame = cv2.add(frameData.frame, frameData.lanes.image)
+        return ProcessState.next

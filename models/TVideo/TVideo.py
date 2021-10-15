@@ -10,6 +10,7 @@ import os
 
 from models.CVModel.CVModel import CVModel
 
+
 Point = Tuple[int, int]
 Box = Tuple[Point, Point]
 
@@ -275,20 +276,25 @@ class TrafficLightData:
 class LaneData:
 	def __init__(
 		self,
-		image      : np.ndarray,
-		lane       : List[List[int]],
-		confidence : float
+		image: np.ndarray,
+		# lane       : List[List[int]],
+		# confidence : float
 	):
-		self.image       = image,
-		self.lane        = lane
-		self.confidence  = confidence
+		self.image = image
+		# self.lane        = lane
+		# self.confidence  = confidence
 		self.label: TObj = TObj.Lane
+		# self.laneDrawn : np.ndarray
 	
-	def calc(self):
-		self.vanishingPoint = self.getVanishingPoint()
+	# def calc(self):
+	# 	self.vanishingPoint = self.getVanishingPoint()
 	
-	def getVanishingPoint(self):
-		...
+	# def getLaneLines(image: np.ndarray):
+		# laneDrawn
+		# ...
+	
+	# def getVanishingPoint(self):
+	# 	...
 
 
 class TFrameData:
@@ -300,10 +306,14 @@ class TFrameData:
 		self.vehicles                 : List[VehicleData]      = []
 		self.licensePlates            : List[LicensePlateData] = []
 		self.trafficLights            : List[TrafficLightData] = []
-		self.lanes                    : List[LaneData]         = []
+		self.lanes                    : LaneData               = None
 		self.allClass                 : List[List[Any]]        = [self.vehicles, self.licensePlates, self.trafficLights]
 		self.numOfClass               : int                    = len(self.allClass)
 		self.currentTrafficLightState : TrafficLightState      = TrafficLightState.unknow
+		self.hasTargetLicensePlate    : bool                   = False
+		self.targetLicensePlateIndex  : int                    = None
+
+		self.LaneCrossLP              : Direct                 = Direct.unknow
 	
 	def getTargetLicensePlatePosition(self, targetLicensePlateCodename) -> Union[List[int], None]:
 		for lp in self.licensePlates:
@@ -312,6 +322,7 @@ class TFrameData:
 		return None
 	
 class Direct(Enum):
+	unknow   = auto()
 	left     = auto()
 	right    = auto()
 	straight = auto()
@@ -358,8 +369,7 @@ class TVideo:
 		self.targetLicensePlateCodename : int = -1
 
 		# 路徑方向
-		self.directs: List[Direct] = []
-
+		self.directs     : List[Direct] = []
 		# 紅燈加車牌的幀位置
 		self.trafficLightStateIsRedFrameIndexs: List[int] = []
 

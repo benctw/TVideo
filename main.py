@@ -69,9 +69,10 @@ def findNumber(args):
 	INFO.progress(0)
 	tVideo = TVideo(paths[0], numbers[0])
 	tVideo.runProcess(
-		TVideoSchedule.forEachStepAll(60), 
+		TVideoSchedule.forEachStepAll(40), 
 		Process.showIndex, 
 		Process.yolo, 
+		Process.createLaneData,
 		# Process.cocoDetect, 
 		Process.calcLicensePlateData, 
 		Process.findCorresponding(), 
@@ -80,9 +81,10 @@ def findNumber(args):
 	INFO.progress(0.25)
 	currentIndex = tVideo.currentIndex
 	tVideo.runProcess(
-		TVideoSchedule.forward(currentIndex + 1, 5), 
+		TVideoSchedule.forward(currentIndex + 1), 
 		Process.showIndex, 
 		Process.yolo, 
+		Process.createLaneData,
 		# Process.cocoDetect,
 		# Process.calcLicensePlateData, 
 		Process.calcCenterPosition,
@@ -91,9 +93,10 @@ def findNumber(args):
 	)
 	INFO.progress(0.50)
 	tVideo.runProcess(
-		TVideoSchedule.backward(currentIndex - 1, 5), 
+		TVideoSchedule.backward(currentIndex - 1), 
 		Process.showIndex, 
 		Process.yolo, 
+		Process.createLaneData,
 		# Process.cocoDetect,
 		# Process.calcLicensePlateData, 
 		Process.calcCenterPosition,
@@ -107,6 +110,7 @@ def findNumber(args):
 		Process.correspondingTrafficLights,
 		Process.drawCurrentTrafficLightState,
 		Process.updateRangeOfTargetLicensePlate,
+		Process.drawLane
 	)
 	tVideo.runProcess(
 		TVideoSchedule.once,
